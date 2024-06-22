@@ -11,6 +11,9 @@
 		2263EE232C26AB3A00688173 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE222C26AB3A00688173 /* ContentView.swift */; };
 		2263EE252C26AB3C00688173 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2263EE242C26AB3C00688173 /* Assets.xcassets */; };
 		2263EE282C26AB3C00688173 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2263EE272C26AB3C00688173 /* Preview Assets.xcassets */; };
+		2263EE302C26B1C300688173 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 2263EE2F2C26B1C300688173 /* FirebaseAuth */; };
+		2263EE322C26B1C300688173 /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 2263EE312C26B1C300688173 /* FirebaseDatabase */; };
+		2263EE352C26B4A200688173 /* Login.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE342C26B4A200688173 /* Login.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -19,6 +22,7 @@
 		2263EE222C26AB3A00688173 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		2263EE242C26AB3C00688173 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		2263EE272C26AB3C00688173 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		2263EE342C26B4A200688173 /* Login.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Login.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -26,6 +30,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2263EE322C26B1C300688173 /* FirebaseDatabase in Frameworks */,
+				2263EE302C26B1C300688173 /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -55,6 +61,7 @@
 				2263EE222C26AB3A00688173 /* ContentView.swift */,
 				2263EE242C26AB3C00688173 /* Assets.xcassets */,
 				2263EE262C26AB3C00688173 /* Preview Content */,
+				2263EE342C26B4A200688173 /* Login.swift */,
 			);
 			path = parkinGait;
 			sourceTree = "<group>";
@@ -83,6 +90,10 @@
 			dependencies = (
 			);
 			name = parkinGait;
+			packageProductDependencies = (
+				2263EE2F2C26B1C300688173 /* FirebaseAuth */,
+				2263EE312C26B1C300688173 /* FirebaseDatabase */,
+			);
 			productName = parkinGait;
 			productReference = 2263EE1D2C26AB3A00688173 /* parkinGait.app */;
 			productType = "com.apple.product-type.application";
@@ -111,6 +122,9 @@
 				Base,
 			);
 			mainGroup = 2263EE142C26AB3A00688173;
+			packageReferences = (
+				2263EE2E2C26B1C300688173 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			productRefGroup = 2263EE1E2C26AB3A00688173 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -137,6 +151,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2263EE352C26B4A200688173 /* Login.swift in Sources */,
 				2263EE232C26AB3A00688173 /* ContentView.swift in Sources */,
 				2263EE212C26AB3A00688173 /* parkinGaitApp.swift in Sources */,
 			);
@@ -342,6 +357,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2263EE2E2C26B1C300688173 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.28.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2263EE2F2C26B1C300688173 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2263EE2E2C26B1C300688173 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		2263EE312C26B1C300688173 /* FirebaseDatabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2263EE2E2C26B1C300688173 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDatabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2263EE152C26AB3A00688173 /* Project object */;
 }
