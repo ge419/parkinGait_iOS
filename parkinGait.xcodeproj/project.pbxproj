@@ -16,6 +16,10 @@
 		2263EE352C26B4A200688173 /* Login.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE342C26B4A200688173 /* Login.swift */; };
 		2263EE372C26BABE00688173 /* Register.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE362C26BABE00688173 /* Register.swift */; };
 		2263EE392C27FDF400688173 /* ForgotPassword.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE382C27FDF400688173 /* ForgotPassword.swift */; };
+		2263EE3B2C28104A00688173 /* MainPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE3A2C28104A00688173 /* MainPage.swift */; };
+		2263EE3D2C2814C700688173 /* Dashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE3C2C2814C700688173 /* Dashboard.swift */; };
+		2263EE3F2C2814D200688173 /* EditProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE3E2C2814D200688173 /* EditProfile.swift */; };
+		2263EE412C2815E000688173 /* Calibration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE402C2815E000688173 /* Calibration.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,6 +31,10 @@
 		2263EE342C26B4A200688173 /* Login.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Login.swift; sourceTree = "<group>"; };
 		2263EE362C26BABE00688173 /* Register.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Register.swift; sourceTree = "<group>"; };
 		2263EE382C27FDF400688173 /* ForgotPassword.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForgotPassword.swift; sourceTree = "<group>"; };
+		2263EE3A2C28104A00688173 /* MainPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainPage.swift; sourceTree = "<group>"; };
+		2263EE3C2C2814C700688173 /* Dashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dashboard.swift; sourceTree = "<group>"; };
+		2263EE3E2C2814D200688173 /* EditProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfile.swift; sourceTree = "<group>"; };
+		2263EE402C2815E000688173 /* Calibration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calibration.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -68,6 +76,10 @@
 				2263EE342C26B4A200688173 /* Login.swift */,
 				2263EE362C26BABE00688173 /* Register.swift */,
 				2263EE382C27FDF400688173 /* ForgotPassword.swift */,
+				2263EE3A2C28104A00688173 /* MainPage.swift */,
+				2263EE3C2C2814C700688173 /* Dashboard.swift */,
+				2263EE3E2C2814D200688173 /* EditProfile.swift */,
+				2263EE402C2815E000688173 /* Calibration.swift */,
 			);
 			path = parkinGait;
 			sourceTree = "<group>";
@@ -160,8 +172,12 @@
 				2263EE352C26B4A200688173 /* Login.swift in Sources */,
 				2263EE232C26AB3A00688173 /* ContentView.swift in Sources */,
 				2263EE372C26BABE00688173 /* Register.swift in Sources */,
+				2263EE3F2C2814D200688173 /* EditProfile.swift in Sources */,
+				2263EE412C2815E000688173 /* Calibration.swift in Sources */,
 				2263EE212C26AB3A00688173 /* parkinGaitApp.swift in Sources */,
 				2263EE392C27FDF400688173 /* ForgotPassword.swift in Sources */,
+				2263EE3D2C2814C700688173 /* Dashboard.swift in Sources */,
+				2263EE3B2C28104A00688173 /* MainPage.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
