@@ -20,33 +20,54 @@ struct Login: View {
 
     
     var body: some View {
-        ZStack {
-            bgColor.ignoresSafeArea()
-            VStack{
-                VStack {
-                    Image("icon")
-                        .resizable()
-                        .frame(width: 110, height: 110)
-                        .padding(.bottom, 20)
-                }
-                VStack(spacing: 20) {
-                    TextField("Email", text: $email)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
+            NavigationStack{
+                ZStack{
+                bgColor.ignoresSafeArea()
+                VStack{
+                    VStack {
+                        Image("icon")
+                            .resizable()
+                            .frame(width: 110, height: 110)
+                            .padding(.bottom, 20)
+                    }
+                    VStack(spacing: 20) {
+                        TextField("Email", text: $email)
+                            .keyboardType(.emailAddress)
+                            .autocapitalization(.none)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
+                        
+                        SecureField("Password", text: $password)
+                            .padding()
+                            .background(Color(.systemGray6))
+                            .cornerRadius(10)
                     
-                    SecureField("Password", text: $password)
-                        .padding()
-                        .background(Color(.systemGray6))
-                        .cornerRadius(10)
+                        NavigationLink(destination: Register(), label: {
+                            Text("Create New User")
+                                .fontWeight(.bold)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.white)
+                                .foregroundColor(.blue)
+                                .overlay(RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.blue, lineWidth: 2))
+                        })
+                        
+                        NavigationLink(destination: ForgotPassword(), label: {
+                            Text("Forgot Your Password?")
+                                .frame(alignment: .center)
+                                .foregroundColor(.blue)
+                        })
+                    }
+                    .padding(.horizontal, 40)
+                    
+                    // Button for Sign In
+                    // Button for Create New User
+                    
+                    
+                    
                 }
-                .padding(.horizontal, 40)
-                
-                // Button for Sign In
-                // Button for Create New User
-                // Button for Forgot Password?
             }
         }
     }
