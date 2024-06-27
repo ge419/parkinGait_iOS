@@ -20,6 +20,7 @@
 		2263EE3D2C2814C700688173 /* Dashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE3C2C2814C700688173 /* Dashboard.swift */; };
 		2263EE3F2C2814D200688173 /* EditProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE3E2C2814D200688173 /* EditProfile.swift */; };
 		2263EE412C2815E000688173 /* Calibration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE402C2815E000688173 /* Calibration.swift */; };
+		22FA8F5C2C2D57B9008C7BBE /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 22FA8F5B2C2D57B9008C7BBE /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +36,7 @@
 		2263EE3C2C2814C700688173 /* Dashboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Dashboard.swift; sourceTree = "<group>"; };
 		2263EE3E2C2814D200688173 /* EditProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfile.swift; sourceTree = "<group>"; };
 		2263EE402C2815E000688173 /* Calibration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calibration.swift; sourceTree = "<group>"; };
+		22FA8F5B2C2D57B9008C7BBE /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../../../../Downloads/GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +71,7 @@
 		2263EE1F2C26AB3A00688173 /* parkinGait */ = {
 			isa = PBXGroup;
 			children = (
+				22FA8F5B2C2D57B9008C7BBE /* GoogleService-Info.plist */,
 				2263EE202C26AB3A00688173 /* parkinGaitApp.swift */,
 				2263EE222C26AB3A00688173 /* ContentView.swift */,
 				2263EE242C26AB3C00688173 /* Assets.xcassets */,
@@ -159,6 +162,7 @@
 			files = (
 				2263EE282C26AB3C00688173 /* Preview Assets.xcassets in Resources */,
 				2263EE252C26AB3C00688173 /* Assets.xcassets in Resources */,
+				22FA8F5C2C2D57B9008C7BBE /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
