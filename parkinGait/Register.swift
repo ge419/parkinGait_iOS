@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct Register: View {
+    @EnvironmentObject var viewModel: AuthViewModel
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
@@ -45,6 +46,19 @@ struct Register: View {
                     .keyboardType(.numberPad)
                 }
                 .padding()
+                Button {
+                    Task {
+                        try await viewModel.createUser(withEmail: email, password: password, name: name, height: height)
+                    }
+                } label: {
+                    Text("Register")
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }.padding()
                 Spacer()
             }
             

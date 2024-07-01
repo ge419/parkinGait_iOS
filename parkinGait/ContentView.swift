@@ -8,16 +8,14 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var viewModel: AuthViewModel
     var body: some View {
-        ZStack {
-            Color.green.ignoresSafeArea()
-            VStack {
-                Image(systemName: "globe")
-                    .imageScale(.large)
-                    .foregroundStyle(.tint)
-                Text("git test")
+        Group {
+            if viewModel.userSession != nil {
+                MainPage()
+            } else {
+                Login()
             }
-            .padding()
         }
     }
 }

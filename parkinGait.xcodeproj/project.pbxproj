@@ -21,6 +21,7 @@
 		2263EE3F2C2814D200688173 /* EditProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE3E2C2814D200688173 /* EditProfile.swift */; };
 		2263EE412C2815E000688173 /* Calibration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2263EE402C2815E000688173 /* Calibration.swift */; };
 		22FA8F5C2C2D57B9008C7BBE /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 22FA8F5B2C2D57B9008C7BBE /* GoogleService-Info.plist */; };
+		22FA8F5E2C329398008C7BBE /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22FA8F5D2C329398008C7BBE /* AuthViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +38,7 @@
 		2263EE3E2C2814D200688173 /* EditProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditProfile.swift; sourceTree = "<group>"; };
 		2263EE402C2815E000688173 /* Calibration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calibration.swift; sourceTree = "<group>"; };
 		22FA8F5B2C2D57B9008C7BBE /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../../../../Downloads/GoogleService-Info.plist"; sourceTree = "<group>"; };
+		22FA8F5D2C329398008C7BBE /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,6 +85,7 @@
 				2263EE3C2C2814C700688173 /* Dashboard.swift */,
 				2263EE3E2C2814D200688173 /* EditProfile.swift */,
 				2263EE402C2815E000688173 /* Calibration.swift */,
+				22FA8F5D2C329398008C7BBE /* AuthViewModel.swift */,
 			);
 			path = parkinGait;
 			sourceTree = "<group>";
@@ -173,6 +176,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				22FA8F5E2C329398008C7BBE /* AuthViewModel.swift in Sources */,
 				2263EE352C26B4A200688173 /* Login.swift in Sources */,
 				2263EE232C26AB3A00688173 /* ContentView.swift in Sources */,
 				2263EE372C26BABE00688173 /* Register.swift in Sources */,

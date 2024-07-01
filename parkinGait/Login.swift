@@ -6,11 +6,11 @@
 //
 
 import SwiftUI
-
+import FirebaseAuth
 
 
 struct Login: View {
-    
+    @EnvironmentObject var viewModel: AuthViewModel
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var showAlert: Bool = false
@@ -42,6 +42,20 @@ struct Login: View {
                             .padding()
                             .background(Color(.systemGray6))
                             .cornerRadius(10)
+                        
+                        Button {
+                            Task {
+                                try await viewModel.signIn(withEmail: email,password: password)
+                            }
+                        } label: {
+                            Text("Sign In")
+                                .fontWeight(.bold)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                        }
                     
                         NavigationLink(destination: Register(), label: {
                             Text("Create New User")
@@ -61,12 +75,6 @@ struct Login: View {
                         })
                     }
                     .padding(.horizontal, 40)
-                    
-                    // Button for Sign In
-                    // Button for Create New User
-                    
-                    
-                    
                 }
             }
         }
