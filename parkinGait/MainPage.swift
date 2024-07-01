@@ -9,6 +9,7 @@ import SwiftUI
 import CoreMotion
 
 struct MainPage: View {
+    @EnvironmentObject var viewModel: AuthViewModel
     @State private var isWalking = false
     @State private var stepLength: Double = 0
     @State private var goalStep: Double = 0
@@ -119,6 +120,16 @@ struct MainPage: View {
                             .foregroundColor(.white)
                             .cornerRadius(5)
                     })
+                    Button{
+                        viewModel.signOut()
+                    } label: {
+                        Text("Sign Out")
+                            .font(.body)
+                            .padding()
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(5)
+                    }
                 }
             }
             .navigationTitle("MainPage")
