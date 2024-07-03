@@ -58,11 +58,31 @@ struct Register: View {
                         .background(Color.blue)
                         .foregroundColor(.white)
                         .cornerRadius(10)
-                }.padding()
+                }
+                .padding()
+                .disabled(!formIsValid)
+                .opacity(formIsValid ? 1.0 : 0.5)
                 Spacer()
             }
             
         }
+    }
+}
+
+extension Register: AuthenticationFormProtocol {
+    var formIsValid: Bool {
+        let regex = try! NSRegularExpression(pattern: "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}", options: [.caseInsensitive])
+        return !email.isEmpty
+        &&
+        regex.firstMatch(in: email, options: [], range: NSRange(location: 0, length: email.utf16.count)) != nil
+        && !password.isEmpty
+        && !confirmPassword.isEmpty
+        && password == confirmPassword
+        && !name.isEmpty
+        && !height.isEmpty
+        && height.range(
+            of: "^[0-9]*$",
+            options: .regularExpression) != nil
     }
 }
 

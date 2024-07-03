@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct EditProfile: View {
+    @EnvironmentObject var viewModel: AuthViewModel
     @State private var name: String = ""
     @State private var height: String = ""
     let appearance = UINavigationBarAppearance()
@@ -28,12 +29,28 @@ struct EditProfile: View {
                 .cornerRadius(10)
             // Save Changes button
 //            Button(action: <#T##() -> Void#>, label: <#T##() -> Label#>)
+            
+            Button {
+                Task {
+                    try await viewModel.updateUser(name: name, height: height)
+                }
+            } label: {
+                Text("Update Profile")
+                    .fontWeight(.bold)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }.padding()
             Spacer()
         }
         .padding()
         .navigationTitle("Edit Profile")
     }
 }
+
+
 
 #Preview {
     EditProfile()

@@ -8,11 +8,8 @@
 import SwiftUI
 
 struct ForgotPassword: View {
-    
+    @EnvironmentObject var viewModel: AuthViewModel
     @State private var email: String = ""
-    @State private var isValidEmail: Bool = true
-    @State private var showAlert: Bool = false
-    @State private var alertMessage: String = ""
     
     let bgColor = Color(red: 0.8706, green: 0.8549, blue: 0.8235)
     
@@ -33,6 +30,23 @@ struct ForgotPassword: View {
                     .padding()
                     .background(Color(.systemGray6))
                     .cornerRadius(10)
+                Button {
+                    Task {
+                        try await viewModel.forgotPassword(withEmail: email)
+                    }
+                } label: {
+                    Text("Send Reset Link")
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .padding()
+                .disabled(!formIsValid)
+                .opacity(formIsValid ? 1.0 : 0.5)
+                
                 //            Button(action: handleResetPassword) {
                 //                Text("Reset Password")
                 //                    .fontWeight(.bold)
@@ -45,6 +59,15 @@ struct ForgotPassword: View {
                 Spacer()
             }.padding()
         }
+    }
+}
+
+extension ForgotPassword: AuthenticationFormProtocol {
+    var formIsValid: Bool {
+        let regex = try! NSRegularExpression(pattern: "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}", options: [.caseInsensitive])
+        return !email.isEmpty
+        &&
+        regex.firstMatch(in: email, options: [], range: NSRange(location: 0, length: email.utf16.count)) != nil
     }
 }
 

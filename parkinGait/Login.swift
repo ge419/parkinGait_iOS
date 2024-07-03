@@ -55,7 +55,8 @@ struct Login: View {
                                 .background(Color.blue)
                                 .foregroundColor(.white)
                                 .cornerRadius(10)
-                        }
+                        }.disabled(!formIsValid)
+                            .opacity(formIsValid ? 1.0: 0.5)
                     
                         NavigationLink(destination: Register(), label: {
                             Text("Create New User")
@@ -78,6 +79,16 @@ struct Login: View {
                 }
             }
         }
+    }
+}
+
+extension Login: AuthenticationFormProtocol {
+    var formIsValid: Bool {
+        let regex = try! NSRegularExpression(pattern: "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,64}", options: [.caseInsensitive])
+        return !email.isEmpty
+        &&
+        regex.firstMatch(in: email, options: [], range: NSRange(location: 0, length: email.utf16.count)) != nil
+        && !password.isEmpty
     }
 }
 

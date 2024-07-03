@@ -10,6 +10,11 @@ import Firebase
 import FirebaseFirestore
 import FirebaseFirestoreSwift
 
+protocol AuthenticationFormProtocol {
+    var formIsValid: Bool { get }
+    
+}
+
 @MainActor
 class AuthViewModel: ObservableObject {
     @Published var userSession: FirebaseAuth.User?
@@ -54,6 +59,38 @@ class AuthViewModel: ObservableObject {
             print("DEBUG: Failed to sign out with error \(error.localizedDescription)")
         }
     }
+    
+    func forgotPassword(withEmail email: String) async throws {
+        do {
+            try await Auth.auth().sendPasswordReset(withEmail: email)
+        } catch {
+            print("DEBUG: Failed to send password reset with error \(error.localizedDescription)")
+        }
+    }
+    
+    func updateUser(name: String? = nil, height: String? = nil) async throws {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        
+        var updates: [String: Any] = [:]
+        
+        if let name = name {
+            updates["name"] = name
+        }
+        
+        if let height = height {
+            updates["height"] = height
+        }
+        
+        guard !updates.isEmpty else { return }
+        
+        do {
+            try await Firestore.firestore().collection("users").document(uid).updateData(updates)
+            await fetchUser()
+        } catch {
+            print("DEBUG: Failed to update user with error \(error.localizedDescription)")
+        }
+    }
+
     
     func fetchUser() async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
