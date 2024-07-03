@@ -27,9 +27,6 @@ struct EditProfile: View {
                 .padding()
                 .background(Color(.systemGray6))
                 .cornerRadius(10)
-            // Save Changes button
-//            Button(action: <#T##() -> Void#>, label: <#T##() -> Label#>)
-            
             Button {
                 Task {
                     try await viewModel.updateUser(name: name, height: height)
@@ -46,7 +43,16 @@ struct EditProfile: View {
             Spacer()
         }
         .padding()
+        .onAppear {
+                    if let user = viewModel.currentUser {
+                        name = user.name
+                        height = user.height
+                    }
+                }
         .navigationTitle("Edit Profile")
+        .alert(isPresented: $viewModel.showAlert) {
+            Alert(title: Text("Profile Update"), message: Text(viewModel.alertMessage), dismissButton: .default(Text("OK")))
+        }
     }
 }
 

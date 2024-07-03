@@ -9,8 +9,6 @@ import Foundation
 import Firebase
 import FirebaseAuth
 import FirebaseDatabase
-import FirebaseFirestore
-import FirebaseFirestoreSwift
 
 protocol AuthenticationFormProtocol {
     var formIsValid: Bool { get }
@@ -20,6 +18,8 @@ protocol AuthenticationFormProtocol {
 class AuthViewModel: ObservableObject {
     @Published var userSession: FirebaseAuth.User?
     @Published var currentUser: User?
+    @Published var showAlert: Bool = false
+    @Published var alertMessage: String = ""
     
     init() {
         self.userSession = Auth.auth().currentUser
@@ -94,8 +94,12 @@ class AuthViewModel: ObservableObject {
 //            try await Firestore.firestore().collection("users").document(uid).updateData(updates)
             let ref = Database.database().reference().child("users").child(uid)
             try await ref.updateChildValues(updates)
+            self.alertMessage = "Successfully updated profile."
+            self.showAlert = true
             await fetchUser()
         } catch {
+            self.alertMessage = "Failed to update profile."
+            self.showAlert = true
             print("DEBUG: Failed to update user with error \(error.localizedDescription)")
         }
     }
