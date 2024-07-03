@@ -15,9 +15,12 @@ struct Calibration: View {
     @State private var goalStep: Double = 0
     @State private var newGoalStep: String = ""
     @State private var locationPlacement = "In Pocket/In Front"
-    @State private var feedbackData: (steps: Int, strideLength: Double, gaitConstant: Double)?
+    @State private var feedbackData: (steps: Int, strideLength: Double, gaitConstant: Double) = (0, 0, 0)
+//    @State private var feedbackData: (steps: Int, strideLength: Double, gaitConstant: Double)?
     @State private var showFeedback = false
-        
+    
+    private var motionManager = CMMotionManager()
+    
     private let locPlac = ["In Pocket/In Front", "In Waist/On Side"]
     
     var body: some View {
@@ -46,7 +49,58 @@ struct Calibration: View {
             }
             .pickerStyle(SegmentedPickerStyle())
             .padding()
-            .navigationTitle("Calibration")
+            
+            if showFeedback {
+                VStack {
+                    Text("Steps Detected: \(feedbackData.steps)")
+                    Text("Stride Length: \(feedbackData.strideLength, specifier: "%.2f") meters")
+                    Text("Gait Constant: \(feedbackData.gaitConstant, specifier: "%.2f")")
+                    Text("Does this seem accurate?")
+                    HStack {
+                        Button("Yes") {
+                            showFeedback = false
+                        }
+                        .padding()
+                        .background(Color.green)
+                        .foregroundColor(.white)
+                        .cornerRadius(5)
+                        
+                        Button("No, recalibrate") {
+                            showFeedback = false
+                            isCollecting = false
+                            accelerometerData.removeAll()
+                        }
+                        .padding()
+                        .background(Color.red)
+                        .foregroundColor(.white)
+                        .cornerRadius(5)
+                    }
+                }
+                .padding()
+            }
+            
+            Button {
+                handleToggleCollecting()
+            } label: {
+                Text(isCollecting ? "Stop Collecting" : "Start Collecting")
+                    .padding()
+                    .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(5)
+                
+            }.padding()
+            
+        }.navigationTitle("Calibration")
+    }
+    
+    private func handleToggleCollecting() {
+        if !isCollecting {
+            accelerometerData.removeAll()
+            // begin collecting
+        } else {
+            isCollecting = false
+            motionManager.stopAccelerometerUpdates()
         }
     }
 }

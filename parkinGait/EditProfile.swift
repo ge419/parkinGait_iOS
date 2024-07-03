@@ -44,11 +44,11 @@ struct EditProfile: View {
         }
         .padding()
         .onAppear {
-                    if let user = viewModel.currentUser {
-                        name = user.name
-                        height = user.height
-                    }
-                }
+            if let user = viewModel.currentUser {
+                name = user.name
+                height = user.height
+            }
+        }
         .navigationTitle("Edit Profile")
         .alert(isPresented: $viewModel.showAlert) {
             Alert(title: Text("Profile Update"), message: Text(viewModel.alertMessage), dismissButton: .default(Text("OK")))

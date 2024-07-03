@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CoreMotion
+import AVFoundation
 
 struct MainPage: View {
     @EnvironmentObject var viewModel: AuthViewModel
@@ -22,7 +23,7 @@ struct MainPage: View {
     
     var body: some View {
         NavigationStack {
-            ZStack {
+            ScrollView{
                 
                 VStack {
                     Text("Gait Tracker Home Page")
@@ -135,6 +136,10 @@ struct MainPage: View {
             .navigationTitle("MainPage")
             .navigationBarTitleDisplayMode(.inline)
         }
+    }
+    
+    func playSound() {
+        
     }
 }
 

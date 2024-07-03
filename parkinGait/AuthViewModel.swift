@@ -45,12 +45,12 @@ class AuthViewModel: ObservableObject {
             let user = User(id: result.user.uid, email: email, name: name, height: height)
             let ref = Database.database().reference().child("users").child(user.id)
             try await ref.setValue([
-                            "email": email,
-                            "name": name,
-                            "height": height
-                        ])
-//            let encodedUser = try Firestore.Encoder().encode(user)
-//            try await Firestore.firestore().collection("users").document(user.id).setData(encodedUser)
+                "email": email,
+                "name": name,
+                "height": height
+            ])
+            //            let encodedUser = try Firestore.Encoder().encode(user)
+            //            try await Firestore.firestore().collection("users").document(user.id).setData(encodedUser)
             await fetchUser()
         } catch {
             print("DEBUG: Failed to create user with error \(error.localizedDescription)")
@@ -91,7 +91,7 @@ class AuthViewModel: ObservableObject {
         guard !updates.isEmpty else { return }
         
         do {
-//            try await Firestore.firestore().collection("users").document(uid).updateData(updates)
+            //            try await Firestore.firestore().collection("users").document(uid).updateData(updates)
             let ref = Database.database().reference().child("users").child(uid)
             try await ref.updateChildValues(updates)
             self.alertMessage = "Successfully updated profile."
@@ -103,13 +103,13 @@ class AuthViewModel: ObservableObject {
             print("DEBUG: Failed to update user with error \(error.localizedDescription)")
         }
     }
-
+    
     
     func fetchUser() async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
-//        guard let snapshot = try? await Firestore.firestore().collection("users").document(uid).getDocument() else { return }
-//        self.currentUser = try? snapshot.data(as: User.self)
-//        print("DEBUG: Current user is \(self.currentUser)")
+        //        guard let snapshot = try? await Firestore.firestore().collection("users").document(uid).getDocument() else { return }
+        //        self.currentUser = try? snapshot.data(as: User.self)
+        //        print("DEBUG: Current user is \(self.currentUser)")
         
         let ref = Database.database().reference().child("users").child(uid)
         do {

@@ -17,11 +17,11 @@ struct Login: View {
     @State private var alertMessage: String = ""
     @State private var isLoading: Bool = false
     let bgColor = Color(red: 0.8706, green: 0.8549, blue: 0.8235)
-
+    
     
     var body: some View {
-            NavigationStack{
-                ZStack{
+        NavigationStack{
+            ZStack{
                 bgColor.ignoresSafeArea()
                 VStack{
                     VStack {
@@ -57,7 +57,7 @@ struct Login: View {
                                 .cornerRadius(10)
                         }.disabled(!formIsValid)
                             .opacity(formIsValid ? 1.0: 0.5)
-                    
+                        
                         NavigationLink(destination: Register(), label: {
                             Text("Create New User")
                                 .fontWeight(.bold)
