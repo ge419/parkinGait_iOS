@@ -7,12 +7,13 @@
 
 import Foundation
 import Firebase
+import FirebaseAuth
+import FirebaseDatabase
 import FirebaseFirestore
 import FirebaseFirestoreSwift
 
 protocol AuthenticationFormProtocol {
     var formIsValid: Bool { get }
-    
 }
 
 @MainActor
@@ -42,8 +43,14 @@ class AuthViewModel: ObservableObject {
             let result = try await Auth.auth().createUser(withEmail: email, password: password)
             self.userSession = result.user
             let user = User(id: result.user.uid, email: email, name: name, height: height)
-            let encodedUser = try Firestore.Encoder().encode(user)
-            try await Firestore.firestore().collection("users").document(user.id).setData(encodedUser)
+            let ref = Database.database().reference().child("users").child(user.id)
+            try await ref.setValue([
+                            "email": email,
+                            "name": name,
+                            "height": height
+                        ])
+//            let encodedUser = try Firestore.Encoder().encode(user)
+//            try await Firestore.firestore().collection("users").document(user.id).setData(encodedUser)
             await fetchUser()
         } catch {
             print("DEBUG: Failed to create user with error \(error.localizedDescription)")
@@ -84,7 +91,9 @@ class AuthViewModel: ObservableObject {
         guard !updates.isEmpty else { return }
         
         do {
-            try await Firestore.firestore().collection("users").document(uid).updateData(updates)
+//            try await Firestore.firestore().collection("users").document(uid).updateData(updates)
+            let ref = Database.database().reference().child("users").child(uid)
+            try await ref.updateChildValues(updates)
             await fetchUser()
         } catch {
             print("DEBUG: Failed to update user with error \(error.localizedDescription)")
@@ -94,10 +103,19 @@ class AuthViewModel: ObservableObject {
     
     func fetchUser() async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
-        guard let snapshot = try? await Firestore.firestore().collection("users").document(uid).getDocument() else { return }
-        self.currentUser = try? snapshot.data(as: User.self)
+//        guard let snapshot = try? await Firestore.firestore().collection("users").document(uid).getDocument() else { return }
+//        self.currentUser = try? snapshot.data(as: User.self)
 //        print("DEBUG: Current user is \(self.currentUser)")
+        
+        let ref = Database.database().reference().child("users").child(uid)
+        do {
+            let snapshot = try await ref.getData()
+            guard let data = snapshot.value as? [String: Any] else { return }
+            self.currentUser = User(id: uid, email: data["email"] as? String ?? "", name: data["name"] as? String ?? "", height: data["height"] as? String ?? "")
+            print("DEBUG: Current user is \(String(describing: self.currentUser))")
+        } catch {
+            print("DEBUG: Failed to fetch user with error \(error.localizedDescription)")
+        }
     }
-    
 }
 
