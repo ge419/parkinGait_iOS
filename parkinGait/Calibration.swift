@@ -10,6 +10,7 @@ import CoreMotion
 
 struct Calibration: View {
     
+    @EnvironmentObject private var viewModel: AuthViewModel
     @State private var isCollecting = false
     @State private var accelerometerData: [CMAccelerometerData] = []
     @State private var goalStep: Double = 0
@@ -112,6 +113,13 @@ struct Calibration: View {
             }.padding()
             
         }.navigationTitle("Calibration")
+            .onAppear {
+                if let height = Double(viewModel.currentUser?.height ?? "") {
+                    goalStep = height * 0.414
+                } else {
+                    goalStep = userHeight * metersToInches * 0.414
+                }
+            }
     }
     
     private func handleToggleCollecting() {
@@ -129,10 +137,8 @@ struct Calibration: View {
     }
     
     private func handleCalibrate() {
-        let xData = accelerometerData.map { $0.acceleration.x
-        }
-        let yData = accelerometerData.map { $0.acceleration.y
-        }
+//        let xData = accelerometerData.map { $0.acceleration.x }
+        let yData = accelerometerData.map { $0.acceleration.y }
         let zData = accelerometerData.map { $0.acceleration.z
         }
         
@@ -156,12 +162,40 @@ struct Calibration: View {
             let times = zip(steps.dropFirst(), steps).map { ($0 - $1) / 10.0 } // times in seconds
             let avTime = times.reduce(0, +) / Double(times.count)
             let avStepLength = distanceTraveled / Double(steps.count)
-            let avStepLengthInches = avStepLength * metersToInches
+//            let avStepLengthInches = avStepLength * metersToInches
             let gaitConstant = avStepLength / avTime
+            
+            Task {
+                await viewModel.saveCalibration(gaitConstant: gaitConstant, threshold: mean, goalStep: newGoalStep, placement: locationPlacement)
+            }
         }
         else if locationPlacement == "In Waist/On Side" {
             // use y data
+            let mean = yData.prefix(yData.count - 10).reduce(0, +) / Double(yData.count - 10)
             
+            var steps: [Double] = []
+            var lastIndex = 0
+            
+            for (index, y) in yData.enumerated() {
+                if index < yData.count - 10,
+                   index - lastIndex > distanceThreshold,
+                   (y < mean && yData[index - 1] > mean) || (yData[index - 1] < mean && y > mean) {
+                    steps.append(Double(index))
+                    lastIndex = index
+                }
+            }
+            
+            let times = zip(steps.dropFirst(), steps).map { ($0 - $1) / 10.0 } // times in seconds
+            let avTime = times.reduce(0, +) / Double(times.count)
+            let avStepLength = distanceTraveled / Double(steps.count)
+//            let avStepLengthInches = avStepLength * metersToInches
+            let gaitConstant = avStepLength / avTime
+            
+            Task {
+                await viewModel.saveCalibration(gaitConstant: gaitConstant, threshold: mean, goalStep: newGoalStep, placement: locationPlacement)
+            }
+            feedbackData = (steps: steps.count, strideLength: avStepLength, gaitConstant: gaitConstant)
+            showFeedback = true
         }
     }
     

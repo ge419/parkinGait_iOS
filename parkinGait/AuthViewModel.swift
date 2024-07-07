@@ -121,5 +121,29 @@ class AuthViewModel: ObservableObject {
             print("DEBUG: Failed to fetch user with error \(error.localizedDescription)")
         }
     }
+    
+    func saveCalibration(gaitConstant: Double, threshold: Double, goalStep: String, placement: String) async {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        
+        let calData: [String: Any] = [
+            "gaitConstant": gaitConstant,
+            "Threshold": threshold,
+            "GoalStep": goalStep,
+            "Placement": placement
+        ]
+        
+        do {
+            let ref = Database.database().reference().child("users").child(uid).child("Calibration")
+            try await ref.setValue(calData)
+            self.alertMessage = "Successfully uploaded calibration."
+            self.showAlert = true
+            await fetchUser()
+        } catch {
+            self.alertMessage = "Failed to upload calibration."
+            self.showAlert = true
+            print("DEBUG: Failed to upload calibration data with error \(error.localizedDescription)")
+        }
+        
+    }
 }
 
