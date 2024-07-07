@@ -16,8 +16,14 @@ struct Calibration: View {
     @State private var newGoalStep: String = ""
     @State private var locationPlacement = "In Pocket/In Front"
     @State private var feedbackData: (steps: Int, strideLength: Double, gaitConstant: Double) = (0, 0, 0)
-//    @State private var feedbackData: (steps: Int, strideLength: Double, gaitConstant: Double)?
+    //    @State private var feedbackData: (steps: Int, strideLength: Double, gaitConstant: Double)?
     @State private var showFeedback = false
+    
+    
+    private let distanceTraveled: Double = 5
+    private let distanceThreshold: Int = 3
+    private let userHeight: Double = 1.778
+    private let metersToInches: Double = 39.3701
     
     private var motionManager = CMMotionManager()
     
@@ -79,10 +85,24 @@ struct Calibration: View {
                 .padding()
             }
             
+            // Start Collecting button
+            //
             Button {
                 handleToggleCollecting()
             } label: {
                 Text(isCollecting ? "Stop Collecting" : "Start Collecting")
+                    .padding()
+                    .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(5)
+                
+            }.padding()
+            
+            Button {
+                handleCalibrate()
+            } label: {
+                Text("Calibrate")
                     .padding()
                     .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
                     .background(Color.green)
@@ -98,9 +118,61 @@ struct Calibration: View {
         if !isCollecting {
             accelerometerData.removeAll()
             // begin collecting
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                self.isCollecting = true
+                self.startAccelerometerUpdates()
+            }
         } else {
             isCollecting = false
             motionManager.stopAccelerometerUpdates()
+        }
+    }
+    
+    private func handleCalibrate() {
+        let xData = accelerometerData.map { $0.acceleration.x
+        }
+        let yData = accelerometerData.map { $0.acceleration.y
+        }
+        let zData = accelerometerData.map { $0.acceleration.z
+        }
+        
+        if locationPlacement == "In Pocket/In Front" {
+            // use z data
+            
+            let mean = zData.prefix(zData.count - 10).reduce(0, +) / Double(zData.count - 10)
+            
+            var steps: [Double] = []
+            var lastIndex = 0
+            
+            for (index, z) in zData.enumerated() {
+                if index < zData.count - 10,
+                   index - lastIndex > distanceThreshold,
+                   (z < mean && zData[index - 1] > mean) || (zData[index - 1] < mean && z > mean) {
+                    steps.append(Double(index))
+                    lastIndex = index
+                }
+            }
+            
+            let times = zip(steps.dropFirst(), steps).map { ($0 - $1) / 10.0 } // times in seconds
+            let avTime = times.reduce(0, +) / Double(times.count)
+            let avStepLength = distanceTraveled / Double(steps.count)
+            let avStepLengthInches = avStepLength * metersToInches
+            let gaitConstant = avStepLength / avTime
+        }
+        else if locationPlacement == "In Waist/On Side" {
+            // use y data
+            
+        }
+    }
+    
+    private func startAccelerometerUpdates() {
+        if motionManager.isAccelerometerAvailable {
+            motionManager.accelerometerUpdateInterval = 0.1
+            motionManager.startAccelerometerUpdates(to: .main) { data, error in
+                if let data = data {
+                    self.accelerometerData.append(data)
+                }
+            }
         }
     }
 }
