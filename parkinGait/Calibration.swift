@@ -31,95 +31,97 @@ struct Calibration: View {
     private let locPlac = ["In Pocket/In Front", "In Waist/On Side"]
     
     var body: some View {
-        VStack {
-            Text("Calibration")
-                .font(.largeTitle)
-                .padding(.top, 20)
-            
-            Text("Recommended Step Length: \(goalStep, specifier: "%.0f") inches")
-                .font(.title2)
-                .padding(.top, 20)
-            
-            TextField("Step Length Goal (inches)", text: $newGoalStep)
-                .keyboardType(.numberPad)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding()
-            
-            Text("Phone Location")
-                .font(.title2)
-                .padding(.top, 20)
-            
-            Picker("Phone Location", selection: $locationPlacement) {
-                ForEach(locPlac, id: \.self) { location in
-                    Text(location)
+        ScrollView {
+            VStack {
+                Text("Calibration")
+                    .font(.largeTitle)
+                    .padding(.top, 20)
+                
+                Text("Recommended Step Length: \(goalStep, specifier: "%.0f") inches")
+                    .font(.title2)
+                    .padding(.top, 20)
+                
+                TextField("Step Length Goal (inches)", text: $newGoalStep)
+                    .keyboardType(.numberPad)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .padding()
+                
+                Text("Phone Location")
+                    .font(.title2)
+                    .padding(.top, 20)
+                
+                Picker("Phone Location", selection: $locationPlacement) {
+                    ForEach(locPlac, id: \.self) { location in
+                        Text(location)
+                    }
                 }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            .padding()
-            
-            if showFeedback {
-                VStack {
-                    Text("Steps Detected: \(feedbackData.steps)")
-                    Text("Stride Length: \(feedbackData.strideLength, specifier: "%.2f") meters")
-                    Text("Gait Constant: \(feedbackData.gaitConstant, specifier: "%.2f")")
-                    Text("Does this seem accurate?")
-                    HStack {
-                        Button("Yes") {
-                            showFeedback = false
+                .pickerStyle(SegmentedPickerStyle())
+                .padding()
+                
+                if showFeedback {
+                    VStack {
+                        Text("Steps Detected: \(feedbackData.steps)")
+                        Text("Stride Length: \(feedbackData.strideLength, specifier: "%.2f") meters")
+                        Text("Gait Constant: \(feedbackData.gaitConstant, specifier: "%.2f")")
+                        Text("Does this seem accurate?")
+                        HStack {
+                            Button("Yes") {
+                                showFeedback = false
+                            }
+                            .padding()
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(5)
+                            
+                            Button("No, recalibrate") {
+                                showFeedback = false
+                                isCollecting = false
+                                accelerometerData.removeAll()
+                            }
+                            .padding()
+                            .background(Color.red)
+                            .foregroundColor(.white)
+                            .cornerRadius(5)
                         }
+                    }
+                    .padding()
+                }
+                
+                // Start Collecting button
+                //
+                Button {
+                    handleToggleCollecting()
+                } label: {
+                    Text(isCollecting ? "Stop Collecting" : "Start Collecting")
                         .padding()
+                        .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
                         .background(Color.green)
                         .foregroundColor(.white)
                         .cornerRadius(5)
-                        
-                        Button("No, recalibrate") {
-                            showFeedback = false
-                            isCollecting = false
-                            accelerometerData.removeAll()
-                        }
+                    
+                }.padding()
+                
+                Button {
+                    handleCalibrate()
+                } label: {
+                    Text("Calibrate")
                         .padding()
-                        .background(Color.red)
+                        .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
+                        .background(Color.green)
                         .foregroundColor(.white)
                         .cornerRadius(5)
-                    }
-                }
-                .padding()
-            }
-            
-            // Start Collecting button
-            //
-            Button {
-                handleToggleCollecting()
-            } label: {
-                Text(isCollecting ? "Stop Collecting" : "Start Collecting")
-                    .padding()
-                    .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(5)
+                    
+                }.padding()
                 
-            }.padding()
-            
-            Button {
-                handleCalibrate()
-            } label: {
-                Text("Calibrate")
-                    .padding()
-                    .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(5)
-                
-            }.padding()
-            
-        }.navigationTitle("Calibration")
-            .onAppear {
-                if let height = Double(viewModel.currentUser?.height ?? "") {
-                    goalStep = height * 0.414
-                } else {
-                    goalStep = userHeight * metersToInches * 0.414
-                }
+            }.navigationTitle("Calibration")
+        }
+        .onAppear {
+            if let height = Double(viewModel.currentUser?.height ?? "") {
+                goalStep = height * 0.414
+            } else {
+                goalStep = userHeight * metersToInches * 0.414
             }
+        }
     }
     
     private func handleToggleCollecting() {
@@ -137,7 +139,7 @@ struct Calibration: View {
     }
     
     private func handleCalibrate() {
-//        let xData = accelerometerData.map { $0.acceleration.x }
+        //        let xData = accelerometerData.map { $0.acceleration.x }
         let yData = accelerometerData.map { $0.acceleration.y }
         let zData = accelerometerData.map { $0.acceleration.z
         }
@@ -162,7 +164,7 @@ struct Calibration: View {
             let times = zip(steps.dropFirst(), steps).map { ($0 - $1) / 10.0 } // times in seconds
             let avTime = times.reduce(0, +) / Double(times.count)
             let avStepLength = distanceTraveled / Double(steps.count)
-//            let avStepLengthInches = avStepLength * metersToInches
+            //            let avStepLengthInches = avStepLength * metersToInches
             let gaitConstant = avStepLength / avTime
             
             Task {
@@ -188,7 +190,7 @@ struct Calibration: View {
             let times = zip(steps.dropFirst(), steps).map { ($0 - $1) / 10.0 } // times in seconds
             let avTime = times.reduce(0, +) / Double(times.count)
             let avStepLength = distanceTraveled / Double(steps.count)
-//            let avStepLengthInches = avStepLength * metersToInches
+            //            let avStepLengthInches = avStepLength * metersToInches
             let gaitConstant = avStepLength / avTime
             
             Task {
