@@ -9,7 +9,7 @@ import SwiftUI
 import CoreMotion
 
 struct Calibration: View {
-    
+    @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var viewModel: AuthViewModel
     @State private var isCollecting = false
     @State private var accelerometerData: [CMAccelerometerData] = []
@@ -19,7 +19,8 @@ struct Calibration: View {
     @State private var feedbackData: (steps: Int, strideLength: Double, gaitConstant: Double) = (0, 0, 0)
     //    @State private var feedbackData: (steps: Int, strideLength: Double, gaitConstant: Double)?
     @State private var showFeedback = false
-    
+    @State private var navigateMainPage = false
+    @FocusState private var isTextFieldFocused: Bool
     
     private let distanceTraveled: Double = 5
     private let distanceThreshold: Int = 3
@@ -31,97 +32,104 @@ struct Calibration: View {
     private let locPlac = ["In Pocket/In Front", "In Waist/On Side"]
     
     var body: some View {
-        ScrollView {
-            VStack {
-                Text("Calibration")
-                    .font(.largeTitle)
-                    .padding(.top, 20)
-                
-                Text("Recommended Step Length: \(goalStep, specifier: "%.0f") inches")
-                    .font(.title2)
-                    .padding(.top, 20)
-                
-                TextField("Step Length Goal (inches)", text: $newGoalStep)
-                    .keyboardType(.numberPad)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .padding()
-                
-                Text("Phone Location")
-                    .font(.title2)
-                    .padding(.top, 20)
-                
-                Picker("Phone Location", selection: $locationPlacement) {
-                    ForEach(locPlac, id: \.self) { location in
-                        Text(location)
+        NavigationStack {
+            ScrollView {
+                VStack {
+                    Text("Calibration")
+                        .font(.largeTitle)
+                        .padding(.top, 20)
+                    
+                    Text("Recommended Step Length: \(goalStep, specifier: "%.0f") inches")
+                        .font(.title2)
+                        .padding(.top, 20)
+                    
+                    TextField("Step Length Goal (inches)", text: $newGoalStep)
+                        .keyboardType(.numberPad)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding()
+                        .focused($isTextFieldFocused)
+                    
+                    Button("Done") {
+                        isTextFieldFocused = false
                     }
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding()
-                
-                if showFeedback {
-                    VStack {
-                        Text("Steps Detected: \(feedbackData.steps)")
-                        Text("Stride Length: \(feedbackData.strideLength, specifier: "%.2f") meters")
-                        Text("Gait Constant: \(feedbackData.gaitConstant, specifier: "%.2f")")
-                        Text("Does this seem accurate?")
-                        HStack {
-                            Button("Yes") {
-                                showFeedback = false
+                    .padding(.top, 10)
+                    
+                    Text("Phone Location")
+                        .font(.title2)
+                        .padding(.top, 20)
+                    
+                    Picker("Phone Location", selection: $locationPlacement) {
+                        ForEach(locPlac, id: \.self) { location in
+                            Text(location)
+                        }
+                    }
+                    .pickerStyle(SegmentedPickerStyle())
+                    .padding()
+                    
+                    if showFeedback {
+                        VStack {
+                            Text("Steps Detected: \(feedbackData.steps)")
+                            Text("Stride Length: \(feedbackData.strideLength, specifier: "%.2f") meters")
+                            Text("Gait Constant: \(feedbackData.gaitConstant, specifier: "%.2f")")
+                            Text("Does this seem accurate?")
+                            HStack {
+                                Button("Yes") {
+                                    showFeedback = false
+                                }
+                                .padding()
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(5)
+                                
+                                Button("No, recalibrate") {
+                                    showFeedback = false
+                                    isCollecting = false
+                                    accelerometerData.removeAll()
+                                }
+                                .padding()
+                                .background(Color.red)
+                                .foregroundColor(.white)
+                                .cornerRadius(5)
                             }
+                        }
+                        .padding()
+                    }
+                    
+                    // Start Collecting button
+                    Button {
+                        handleToggleCollecting()
+                    } label: {
+                        Text(isCollecting ? "Stop Collecting" : "Start Collecting")
                             .padding()
+                            .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
                             .background(Color.green)
                             .foregroundColor(.white)
                             .cornerRadius(5)
-                            
-                            Button("No, recalibrate") {
-                                showFeedback = false
-                                isCollecting = false
-                                accelerometerData.removeAll()
-                            }
+                        
+                    }.padding()
+                    
+                    // Calibrate button
+                    Button {
+                        handleCalibrate()
+                    } label: {
+                        Text("Calibrate")
                             .padding()
-                            .background(Color.red)
+                            .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
+                            .background(Color.green)
                             .foregroundColor(.white)
                             .cornerRadius(5)
-                        }
-                    }
-                    .padding()
+                        
+                    }.padding()
                 }
-                
-                // Start Collecting button
-                //
-                Button {
-                    handleToggleCollecting()
-                } label: {
-                    Text(isCollecting ? "Stop Collecting" : "Start Collecting")
-                        .padding()
-                        .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(5)
-                    
-                }.padding()
-                
-                Button {
-                    handleCalibrate()
-                } label: {
-                    Text("Calibrate")
-                        .padding()
-                        .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(5)
-                    
-                }.padding()
-                
-            }.navigationTitle("Calibration")
-        }
-        .onAppear {
-            if let height = Double(viewModel.currentUser?.height ?? "") {
-                goalStep = height * 0.414
-            } else {
-                goalStep = userHeight * metersToInches * 0.414
             }
-        }
+        }.navigationTitle("Calibration")
+            .onAppear {
+                if let height = Double(viewModel.currentUser?.height ?? "") {
+                    goalStep = height * 0.414
+                } else {
+                    goalStep = userHeight * metersToInches * 0.414
+                }
+            }
     }
     
     private func handleToggleCollecting() {
@@ -169,6 +177,7 @@ struct Calibration: View {
             
             Task {
                 await viewModel.saveCalibration(gaitConstant: gaitConstant, threshold: mean, goalStep: newGoalStep, placement: locationPlacement)
+                presentationMode.wrappedValue.dismiss()
             }
         }
         else if locationPlacement == "In Waist/On Side" {
@@ -198,7 +207,9 @@ struct Calibration: View {
             }
             feedbackData = (steps: steps.count, strideLength: avStepLength, gaitConstant: gaitConstant)
             showFeedback = true
+            presentationMode.wrappedValue.dismiss()
         }
+        navigateMainPage = true
     }
     
     private func startAccelerometerUpdates() {

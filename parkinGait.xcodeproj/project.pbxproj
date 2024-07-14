@@ -25,6 +25,8 @@
 		22FA8F602C329B6C008C7BBE /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22FA8F5F2C329B6C008C7BBE /* User.swift */; };
 		22FA8F622C32A639008C7BBE /* FirebaseFirestoreSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 22FA8F612C32A639008C7BBE /* FirebaseFirestoreSwift */; };
 		22FA8F642C32A68B008C7BBE /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 22FA8F632C32A68B008C7BBE /* FirebaseFirestore */; };
+		22FA8F672C4399F8008C7BBE /* beep3.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 22FA8F652C4399F8008C7BBE /* beep3.mp3 */; };
+		22FA8F682C4399F8008C7BBE /* beep2.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 22FA8F662C4399F8008C7BBE /* beep2.mp3 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +45,8 @@
 		22FA8F5B2C2D57B9008C7BBE /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "../../../../Downloads/GoogleService-Info.plist"; sourceTree = "<group>"; };
 		22FA8F5D2C329398008C7BBE /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthViewModel.swift; sourceTree = "<group>"; };
 		22FA8F5F2C329B6C008C7BBE /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		22FA8F652C4399F8008C7BBE /* beep3.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = beep3.mp3; path = ../../../Duke/parkinGait/beep3.mp3; sourceTree = "<group>"; };
+		22FA8F662C4399F8008C7BBE /* beep2.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = beep2.mp3; path = ../../../Duke/parkinGait/beep2.mp3; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,6 +87,8 @@
 				2263EE202C26AB3A00688173 /* parkinGaitApp.swift */,
 				2263EE222C26AB3A00688173 /* ContentView.swift */,
 				2263EE242C26AB3C00688173 /* Assets.xcassets */,
+				22FA8F662C4399F8008C7BBE /* beep2.mp3 */,
+				22FA8F652C4399F8008C7BBE /* beep3.mp3 */,
 				2263EE262C26AB3C00688173 /* Preview Content */,
 				2263EE342C26B4A200688173 /* Login.swift */,
 				2263EE362C26BABE00688173 /* Register.swift */,
@@ -174,7 +180,9 @@
 			files = (
 				2263EE282C26AB3C00688173 /* Preview Assets.xcassets in Resources */,
 				2263EE252C26AB3C00688173 /* Assets.xcassets in Resources */,
+				22FA8F672C4399F8008C7BBE /* beep3.mp3 in Resources */,
 				22FA8F5C2C2D57B9008C7BBE /* GoogleService-Info.plist in Resources */,
+				22FA8F682C4399F8008C7BBE /* beep2.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -14,17 +14,18 @@ struct MainPage: View {
     @State private var isWalking = false
     @State private var stepLength: Double = 0
     @State private var goalStep: Double = 0
-    @State private var isEnabled = false
     @State private var range: Double = 30
     @State private var vibrateOption = "Over Step Goal"
     @State private var vibrateValue = "Vibrate Phone"
+    @State private var isPlaying = false
+    @State private var player: AVAudioPlayer?
+    @State private var timer: Timer?
     
     let bgColor = Color(red: 0.8706, green: 0.8549, blue: 0.8235)
     
     var body: some View {
         NavigationStack {
             ScrollView{
-                
                 VStack {
                     Text("Gait Tracker Home Page")
                         .font(.largeTitle)
@@ -49,11 +50,20 @@ struct MainPage: View {
                         .font(.title)
                         .padding(.top, 20)
                     
-                    Toggle(isOn: $isEnabled) {
-                    }
+//                    let binding = Binding {
+//                        isPlaying
+//                    } set: {
+//                        metronome(with: $0)
+//                    }
+                    
+                    Toggle(isOn: $isPlaying) {}
                     .toggleStyle(SwitchToggleStyle(tint: Color.blue))
                     .padding(.horizontal, 200)
                     .padding(.top, 10)
+                    .onChange(of: isPlaying) {
+                        metronome(with: isPlaying)
+                    }
+                    
                     
                     Text("\(Int(range)) Steps per Minute")
                         .font(.title2)
@@ -138,8 +148,65 @@ struct MainPage: View {
         }
     }
     
-    func playSound() {
+    func playSound1() {
+        guard let soundURL1 = Bundle.main.url(forResource: "beep2", withExtension: "mp3") else { return }
+        do {
+            let player = try AVAudioPlayer(contentsOf: soundURL1)
+            player.play()
+        } catch {
+            print("DEBUG: Failed to play sound 1 \(error.localizedDescription)")
+        }
+    }
+    
+    func playSound2() {
+        guard let soundURL2 = Bundle.main.url(forResource: "beep3", withExtension: "mp3") else { return }
+        do {
+            let player = try AVAudioPlayer(contentsOf: soundURL2)
+            player.play()
+        } catch {
+            print("DEBUG: Failed to play sound 2 \(error.localizedDescription)")
+        }
         
+    }
+    
+    func metronome(with value: Bool) {
+        prepareAudioPlayer()
+        if value {
+            startMetronome()
+        } else {
+            stopMetronome()
+        }
+    }
+    
+    func startMetronome() {
+        timer = Timer.scheduledTimer(withTimeInterval: 60.0 / range, repeats: true) { _ in
+            self.playSound()
+            print("playing")
+        }
+        
+    }
+    
+    func stopMetronome() {
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    func playSound() {
+        player?.play()
+    }
+    
+    func prepareAudioPlayer() {
+        if let url = Bundle.main.url(forResource: "beep2", withExtension: "mp3") {
+            do {
+                player = try AVAudioPlayer(contentsOf: url)
+                player?.prepareToPlay()
+                print("Prepared to play sound")
+            } catch {
+                print("Error loading audio file: \(error.localizedDescription)")
+            }
+        } else {
+            print("Audio file not found")
+        }
     }
 }
 
