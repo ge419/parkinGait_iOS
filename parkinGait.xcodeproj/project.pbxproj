@@ -27,6 +27,7 @@
 		22FA8F642C32A68B008C7BBE /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 22FA8F632C32A68B008C7BBE /* FirebaseFirestore */; };
 		22FA8F672C4399F8008C7BBE /* beep3.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 22FA8F652C4399F8008C7BBE /* beep3.mp3 */; };
 		22FA8F682C4399F8008C7BBE /* beep2.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 22FA8F662C4399F8008C7BBE /* beep2.mp3 */; };
+		22FA8F6A2C451091008C7BBE /* UserCalibration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22FA8F692C451091008C7BBE /* UserCalibration.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -47,6 +48,7 @@
 		22FA8F5F2C329B6C008C7BBE /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		22FA8F652C4399F8008C7BBE /* beep3.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = beep3.mp3; path = ../../../Duke/parkinGait/beep3.mp3; sourceTree = "<group>"; };
 		22FA8F662C4399F8008C7BBE /* beep2.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; name = beep2.mp3; path = ../../../Duke/parkinGait/beep2.mp3; sourceTree = "<group>"; };
+		22FA8F692C451091008C7BBE /* UserCalibration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserCalibration.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,6 +101,7 @@
 				2263EE402C2815E000688173 /* Calibration.swift */,
 				22FA8F5D2C329398008C7BBE /* AuthViewModel.swift */,
 				22FA8F5F2C329B6C008C7BBE /* User.swift */,
+				22FA8F692C451091008C7BBE /* UserCalibration.swift */,
 			);
 			path = parkinGait;
 			sourceTree = "<group>";
@@ -196,6 +199,7 @@
 				22FA8F5E2C329398008C7BBE /* AuthViewModel.swift in Sources */,
 				2263EE352C26B4A200688173 /* Login.swift in Sources */,
 				2263EE232C26AB3A00688173 /* ContentView.swift in Sources */,
+				22FA8F6A2C451091008C7BBE /* UserCalibration.swift in Sources */,
 				2263EE372C26BABE00688173 /* Register.swift in Sources */,
 				2263EE3F2C2814D200688173 /* EditProfile.swift in Sources */,
 				2263EE412C2815E000688173 /* Calibration.swift in Sources */,

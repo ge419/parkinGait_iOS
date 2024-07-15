@@ -21,6 +21,11 @@ struct MainPage: View {
     @State private var player: AVAudioPlayer?
     @State private var timer: Timer?
     
+    @State private var accelerometerData: [CMAccelerometerData] = []
+    
+    
+    private var motionManager = CMMotionManager()
+    
     let bgColor = Color(red: 0.8706, green: 0.8549, blue: 0.8235)
     
     var body: some View {
@@ -31,14 +36,14 @@ struct MainPage: View {
                         .font(.largeTitle)
                         .padding(.top, 20)
                     
-                    //                    Button(action: handleToggleWalking) {
-                    //                        Text(isWalking ? "Stop Walking" : "Start Walking")
-                    //                            .font(.title)
-                    //                            .padding()
-                    //                            .background(Color.green)
-                    //                            .foregroundColor(.white)
-                    //                            .cornerRadius(5)
-                    //                    }
+                    Button(action: handleToggleWalking) {
+                        Text(isWalking ? "Stop Walking" : "Start Walking")
+                            .font(.title)
+                            .padding()
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(5)
+                    }
                     Text("Step Length Estimate: \(String(format: "%.2f", stepLength)) inches")
                         .font(.title2)
                         .padding(.top, 20)
@@ -50,19 +55,19 @@ struct MainPage: View {
                         .font(.title)
                         .padding(.top, 20)
                     
-//                    let binding = Binding {
-//                        isPlaying
-//                    } set: {
-//                        metronome(with: $0)
-//                    }
+                    //                    let binding = Binding {
+                    //                        isPlaying
+                    //                    } set: {
+                    //                        metronome(with: $0)
+                    //                    }
                     
                     Toggle(isOn: $isPlaying) {}
-                    .toggleStyle(SwitchToggleStyle(tint: Color.blue))
-                    .padding(.horizontal, 200)
-                    .padding(.top, 10)
-                    .onChange(of: isPlaying) {
-                        metronome(with: isPlaying)
-                    }
+                        .toggleStyle(SwitchToggleStyle(tint: Color.blue))
+                        .padding(.horizontal, 200)
+                        .padding(.top, 10)
+                        .onChange(of: isPlaying) {
+                            metronome(with: isPlaying)
+                        }
                     
                     
                     Text("\(Int(range)) Steps per Minute")
@@ -71,6 +76,12 @@ struct MainPage: View {
                     Slider(value: $range, in: 30...120, step: 1)
                         .padding(.horizontal, 50)
                         .padding(.bottom, 20)
+                        .onChange(of: range) {
+                            if isPlaying {
+                                stopMetronome()
+                                startMetronome()
+                            }
+                        }
                     
                     Text("Vibrate If...")
                         .font(.title2)
@@ -178,12 +189,15 @@ struct MainPage: View {
         }
     }
     
+    // DEBUG: Metronome for 119, 120 BPM doesnt work properly
     func startMetronome() {
-        timer = Timer.scheduledTimer(withTimeInterval: 60.0 / range, repeats: true) { _ in
+        stopMetronome()
+        let interval = 60.0 / range
+        print(interval)
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in
             self.playSound()
-            print("playing")
+            print("beep")
         }
-        
     }
     
     func stopMetronome() {
@@ -207,6 +221,13 @@ struct MainPage: View {
         } else {
             print("Audio file not found")
         }
+    }
+    
+    func handleToggleWalking() {
+        if isWalking {
+            isWalking = false
+        }
+        isWalking = !isWalking
     }
 }
 

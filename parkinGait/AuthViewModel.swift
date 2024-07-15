@@ -18,8 +18,10 @@ protocol AuthenticationFormProtocol {
 class AuthViewModel: ObservableObject {
     @Published var userSession: FirebaseAuth.User?
     @Published var currentUser: User?
+    @Published var currentCalibration: UserCalibration?
     @Published var showAlert: Bool = false
     @Published var alertMessage: String = ""
+
     
     init() {
         self.userSession = Auth.auth().currentUser
@@ -143,7 +145,20 @@ class AuthViewModel: ObservableObject {
             self.showAlert = true
             print("DEBUG: Failed to upload calibration data with error \(error.localizedDescription)")
         }
+    }
+    // TODO: need to fetch step length goal
+    func fetchCalibration() async {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
         
+        let ref = Database.database().reference().child("users").child(uid)
+        
+        do {
+            let snapshot = try await ref.getData()
+            guard let data = snapshot.value as? [String: Any] else { return }
+            self.currentCalibration = UserCalibration(id: uid, gaitConstant: data["gaitConstant"] as? Double ?? 0, Threshold: data["Threshold"] as? Double ?? 0, GoalStep: data["GoalStep"] as? String ?? "", placement: data["placement"] as? String ?? "")
+            print("DEBUG: Current user calibration is \(String(describing: self.currentCalibration))")
+        } catch {
+            print("DEBUG: Failed to fetch calibration with error \(error.localizedDescription)")
+        }
     }
 }
-
