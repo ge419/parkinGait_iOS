@@ -11,9 +11,14 @@ import AVFoundation
 
 struct MainPage: View {
     @EnvironmentObject var viewModel: AuthViewModel
+    
+    @State private var gaitConstant: Double = 0
+    @State private var threshold: Double = 0
+    @State private var goalStep: String = ""
+    @State private var placement: String = ""
+    
     @State private var isWalking = false
     @State private var stepLength: Double = 0
-    @State private var goalStep: Double = 0
     @State private var range: Double = 30
     @State private var vibrateOption = "Over Step Goal"
     @State private var vibrateValue = "Vibrate Phone"
@@ -156,6 +161,14 @@ struct MainPage: View {
             }
             .navigationTitle("MainPage")
             .navigationBarTitleDisplayMode(.inline)
+        }
+        .onAppear{
+            if let calibration = viewModel.currentCalibration {
+                gaitConstant = calibration.gaitConstant
+                threshold = calibration.threshold
+                goalStep = calibration.goalStep
+                placement = calibration.placement
+            }
         }
     }
     

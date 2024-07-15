@@ -124,6 +124,21 @@ class AuthViewModel: ObservableObject {
         }
     }
     
+    func fetchCalibration() async {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        
+        let ref = Database.database().reference().child("users").child(uid).child("Calibration")
+        
+        do {
+            let snapshot = try await ref.getData()
+            guard let data = snapshot.value as? [String: Any] else { return }
+            self.currentCalibration = UserCalibration(id: uid, gaitConstant: data["gaitConstant"] as? Double ?? 0, threshold: data["Threshold"] as? Double ?? 0, goalStep: data["GoalStep"] as? String ?? "", placement: data["placement"] as? String ?? "")
+            print("DEBUG: Current user calibration is \(String(describing: self.currentCalibration))")
+        } catch {
+            print("DEBUG: Failed to fetch calibration with error \(error.localizedDescription)")
+        }
+    }
+    
     func saveCalibration(gaitConstant: Double, threshold: Double, goalStep: String, placement: String) async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         
@@ -144,21 +159,6 @@ class AuthViewModel: ObservableObject {
             self.alertMessage = "Failed to upload calibration."
             self.showAlert = true
             print("DEBUG: Failed to upload calibration data with error \(error.localizedDescription)")
-        }
-    }
-    // TODO: need to fetch step length goal
-    func fetchCalibration() async {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
-        
-        let ref = Database.database().reference().child("users").child(uid)
-        
-        do {
-            let snapshot = try await ref.getData()
-            guard let data = snapshot.value as? [String: Any] else { return }
-            self.currentCalibration = UserCalibration(id: uid, gaitConstant: data["gaitConstant"] as? Double ?? 0, Threshold: data["Threshold"] as? Double ?? 0, GoalStep: data["GoalStep"] as? String ?? "", placement: data["placement"] as? String ?? "")
-            print("DEBUG: Current user calibration is \(String(describing: self.currentCalibration))")
-        } catch {
-            print("DEBUG: Failed to fetch calibration with error \(error.localizedDescription)")
         }
     }
 }

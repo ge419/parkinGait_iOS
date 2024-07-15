@@ -10,7 +10,7 @@ import Foundation
 struct UserCalibration: Identifiable, Codable {
     let id: String
     let gaitConstant: Double
-    let Threshold: Double
-    let GoalStep: String
+    let threshold: Double
+    let goalStep: String
     let placement: String
 }
