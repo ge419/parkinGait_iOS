@@ -17,7 +17,6 @@ struct Calibration: View {
     @State private var newGoalStep: String = ""
     @State private var locationPlacement = "In Pocket/In Front"
     @State private var feedbackData: (steps: Int, strideLength: Double, gaitConstant: Double) = (0, 0, 0)
-    //    @State private var feedbackData: (steps: Int, strideLength: Double, gaitConstant: Double)?
     @State private var showFeedback = false
     @State private var navigateMainPage = false
     @FocusState private var isTextFieldFocused: Bool
@@ -147,7 +146,6 @@ struct Calibration: View {
     }
     
     private func handleCalibrate() {
-        //        let xData = accelerometerData.map { $0.acceleration.x }
         let yData = accelerometerData.map { $0.acceleration.y }
         let zData = accelerometerData.map { $0.acceleration.z
         }
@@ -169,7 +167,7 @@ struct Calibration: View {
                 }
             }
             
-            let times = zip(steps.dropFirst(), steps).map { ($0 - $1) / 10.0 } // times in seconds
+            let times = zip(steps.dropFirst(), steps).map { ($0 - $1) / 10.0 } 
             let avTime = times.reduce(0, +) / Double(times.count)
             let avStepLength = distanceTraveled / Double(steps.count)
             //            let avStepLengthInches = avStepLength * metersToInches

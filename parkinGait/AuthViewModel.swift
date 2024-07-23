@@ -161,4 +161,19 @@ class AuthViewModel: ObservableObject {
             print("DEBUG: Failed to upload calibration data with error \(error.localizedDescription)")
         }
     }
+    
+    func updateStepLength(sec: TimeInterval, stepLengthEst: Double) async {
+        guard let uid = Auth.auth().currentUser?.uid else { return }
+        do {
+            let ref = Database.database().reference().child("users").child(uid).child("StepLength")
+            try await ref.setValue(["\(sec)": stepLengthEst])
+            self.alertMessage = "Successfully uploaded Step Length."
+            self.showAlert = true
+            await fetchUser()
+        } catch {
+            self.alertMessage = "Failed to upload Step Length."
+            self.showAlert = true
+            print("DEBUG: Failed tp upload Step Length with error \(error.localizedDescription)")
+        }
+    }
 }

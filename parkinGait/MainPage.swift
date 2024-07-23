@@ -14,7 +14,7 @@ struct MainPage: View {
     
     @State private var gaitConstant: Double = 0
     @State private var threshold: Double = 0
-    @State private var goalStep: String = ""
+    @State private var goalStep: Double = 0
     @State private var placement: String = ""
     
     @State private var isWalking = false
@@ -27,9 +27,25 @@ struct MainPage: View {
     @State private var timer: Timer?
     
     @State private var accelerometerData: [CMAccelerometerData] = []
-    
+    @State private var stepLengthFirebase: [Double] = []
+    @State private var peakTimes: [Double] = []
+    @State private var waitingFor1stValue = false
+    @State private var waitingFor2ndValue = false
+    @State private var waitingFor3rdValue = false
+    @State private var isEnabled = false
+    @State private var lastPeakSign = -1
+    @State private var lastPeakIndex = 0
+    @State private var isFirstPeakPositive = false
+    @State private var dynamicThreshold: Double = 0
+    @State private var recentAccelData: [Double] = []
     
     private var motionManager = CMMotionManager()
+    
+    let ACCELEROMETER_TIMING = 0.1
+    let ACCELEROMETER_HZ = 1.0 / 0.1
+    let USER_HEIGHT = 1.778
+    let METERS_TO_INCHES = 39.3701
+    let DISTANCE_THRESHOLD = 3.0
     
     let bgColor = Color(red: 0.8706, green: 0.8549, blue: 0.8235)
     
@@ -59,12 +75,6 @@ struct MainPage: View {
                     Text("Start Metronome")
                         .font(.title)
                         .padding(.top, 20)
-                    
-                    //                    let binding = Binding {
-                    //                        isPlaying
-                    //                    } set: {
-                    //                        metronome(with: $0)
-                    //                    }
                     
                     Toggle(isOn: $isPlaying) {}
                         .toggleStyle(SwitchToggleStyle(tint: Color.blue))
@@ -166,7 +176,7 @@ struct MainPage: View {
             if let calibration = viewModel.currentCalibration {
                 gaitConstant = calibration.gaitConstant
                 threshold = calibration.threshold
-                goalStep = calibration.goalStep
+                goalStep = Double(calibration.goalStep) ?? 0
                 placement = calibration.placement
             }
         }
@@ -203,6 +213,7 @@ struct MainPage: View {
     }
     
     // DEBUG: Metronome for 119, 120 BPM doesnt work properly
+    // maybe the beep is too long for 120 BPM
     func startMetronome() {
         stopMetronome()
         let interval = 60.0 / range
@@ -236,12 +247,163 @@ struct MainPage: View {
         }
     }
     
+    func movingAverage(data: [Double], windowSize: Int) -> [Double] {
+        var result: [Double] = []
+        
+        for i in 0..<(data.count - windowSize + 1) {
+            let currentWindow = Array(data[i..<(i + windowSize)])
+            let windowAvg = currentWindow.reduce(0, +) / Double(windowSize)
+            result.append(windowAvg)
+        }
+        
+        return result
+    }
+    
+    func stdDev(arr: [Double]) -> Double {
+        let avg = arr.reduce(0, +) / Double(arr.count)
+        let sumOfSquares = arr.reduce(0) { $0 + ($1 - avg) * ($1 - avg) }
+        return sqrt(sumOfSquares / Double(arr.count))
+    }
+    
     func handleToggleWalking() {
         if isWalking {
+            // stop walking
             isWalking = false
+            motionManager.stopAccelerometerUpdates()
+        } else {
+            // start walking
+            accelerometerData.removeAll()
+            peakTimes.removeAll()
+            stepLength = 0
+            waitingFor1stValue = false
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                isWalking = true
+                waitingFor1stValue = true
+                waitingFor2ndValue = false
+                waitingFor3rdValue = false
+                isFirstPeakPositive = false
+                lastPeakSign = -1
+                lastPeakIndex = -1
+                let vibrationDuration: Double = 0.9
+                let vibrate = UIImpactFeedbackGenerator(style: .heavy)
+                vibrate.prepare()
+                for _ in 0..<Int(vibrationDuration * 10) {
+                    vibrate.impactOccurred()
+                    usleep(100000) // 100ms
+                }
+                if motionManager.isAccelerometerAvailable {
+                    motionManager.accelerometerUpdateInterval = ACCELEROMETER_TIMING
+                    motionManager.startAccelerometerUpdates(to: .main) {data, error in
+                        if let data = data {
+                            handleNewAccelerometerData(data: data)
+                        }
+                        
+                    }
+                }
+            }
+            
         }
-        isWalking = !isWalking
     }
+    
+    func handleNewAccelerometerData(data: CMAccelerometerData) {
+        accelerometerData.append(data)
+        recentAccelData.append(data.acceleration.z)
+        
+        if recentAccelData.count > 20 {
+            recentAccelData.removeFirst()
+        }
+        
+        let zData = recentAccelData
+
+        let stdDev = stdDev(arr: zData)
+        let mean = zData.reduce(0, +) / Double(zData.count)
+        dynamicThreshold = mean + stdDev * 1.5
+        
+        detectSteps()
+    }
+    
+    func detectSteps() {
+        let zData = accelerometerData.map { $0.acceleration.z }
+        let mean = zData.reduce(0, +) / Double(zData.count)
+        let variance = zData.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(zData.count)
+        let stdDev = sqrt(variance)
+        let dynamicThresholdZ = mean + stdDev * 0.5
+
+        let currentIndex = zData.count - 1
+
+        if currentIndex < 2 { return }
+
+        let zDataCurr = zData[currentIndex]
+        let zDataPrev = zData[currentIndex - 1]
+        let DataTime = Double(currentIndex) / ACCELEROMETER_HZ
+
+        if waitingFor1stValue && ((zDataCurr < threshold && zDataPrev > threshold) || (zDataCurr > threshold && zDataPrev < threshold)) {
+            if lastPeakIndex == -1 || currentIndex - lastPeakIndex > Int(threshold) || currentIndex - lastPeakIndex > Int(dynamicThresholdZ) {
+                if lastPeakSign == -1 {
+                    if peakTimes.isEmpty {
+                        peakTimes.append(DataTime)
+                    } else {
+                        peakTimes.append(DataTime)
+                    }
+                    lastPeakIndex = currentIndex
+                    lastPeakSign = 1
+                    isFirstPeakPositive = true
+                    waitingFor1stValue = false
+                    waitingFor2ndValue = true
+                }
+            }
+        }
+
+        if waitingFor2ndValue && ((zDataCurr < threshold && zDataPrev > threshold) || (zDataCurr > threshold && zDataPrev < threshold)) {
+            if currentIndex - lastPeakIndex > Int(threshold) || currentIndex - lastPeakIndex > Int(dynamicThresholdZ) {
+                if lastPeakSign == 1 {
+                    peakTimes.append(DataTime)
+                    lastPeakIndex = currentIndex
+                    lastPeakSign = -1
+                    waitingFor2ndValue = false
+                    waitingFor1stValue = true
+                }
+            }
+        }
+
+        if peakTimes.count == 2 {
+            let peak2 = peakTimes.last!
+            let peak1 = peakTimes.first!
+            let peakBetweenTime = peak2 - peak1
+            let stepLengthEst = peakBetweenTime * gaitConstant * METERS_TO_INCHES
+
+            stepLength = stepLengthEst
+            stepLengthFirebase.append(stepLengthEst)
+            let sec = Date().timeIntervalSince1970
+            Task {
+                await viewModel.updateStepLength(sec: sec, stepLengthEst: stepLengthEst)
+            }
+            print("STEP: \(stepLengthEst)")
+
+            if vibrateOption == "Over Step Goal" {
+                if vibrateValue == "Vibrate Phone" && stepLengthEst > goalStep {
+                    let vibrate = UIImpactFeedbackGenerator(style: .heavy)
+                    vibrate.prepare()
+                    vibrate.impactOccurred()
+                    playSound2()
+                }
+            }
+
+            if vibrateOption == "Under Step Goal" {
+                if vibrateValue == "Vibrate Phone" && stepLengthEst < goalStep {
+                    let vibrate = UIImpactFeedbackGenerator(style: .heavy)
+                    vibrate.prepare()
+                    vibrate.impactOccurred()
+                    playSound1()
+                }
+            }
+
+            waitingFor1stValue = true
+            peakTimes = [peakTimes.last!]
+        }
+    }
+
 }
 
 #Preview {
