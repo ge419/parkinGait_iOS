@@ -43,7 +43,6 @@ struct MainPage: View {
     
     let ACCELEROMETER_TIMING = 0.1
     let ACCELEROMETER_HZ = 1.0 / 0.1
-    let USER_HEIGHT = 1.778
     let METERS_TO_INCHES = 39.3701
     let DISTANCE_THRESHOLD = 3.0
     
@@ -55,6 +54,10 @@ struct MainPage: View {
                 VStack {
                     Text("Gait Tracker Home Page")
                         .font(.largeTitle)
+                        .padding(.top, 20)
+                    
+                    Text("Gait Constant: \(gaitConstant)m/s")
+                        .font(.body)
                         .padding(.top, 20)
                     
                     Button(action: handleToggleWalking) {
@@ -171,15 +174,34 @@ struct MainPage: View {
             }
             .navigationTitle("MainPage")
             .navigationBarTitleDisplayMode(.inline)
-        }
-        .onAppear{
-            if let calibration = viewModel.currentCalibration {
-                gaitConstant = calibration.gaitConstant
-                threshold = calibration.threshold
-                goalStep = Double(calibration.goalStep) ?? 0
-                placement = calibration.placement
+            .refreshable {
+                fetchCalibrationData()
             }
         }
+        .onAppear {
+            fetchCalibrationData()
+        }
+        .onChange(of: viewModel.calibrationFetched) {
+            if viewModel.calibrationFetched, let calibration = viewModel.currentCalibration {
+                updateCalibrationData(with: calibration)
+            }
+        }
+    }
+    
+    private func fetchCalibrationData() {
+        Task {
+            await viewModel.fetchCalibration()
+            if let calibration = viewModel.currentCalibration {
+                updateCalibrationData(with: calibration)
+            }
+        }
+    }
+    
+    private func updateCalibrationData(with calibration: UserCalibration) {
+        gaitConstant = calibration.gaitConstant
+        threshold = calibration.threshold
+        goalStep = Double(calibration.goalStep) ?? 0
+        placement = calibration.placement
     }
     
     func playSound1() {
@@ -270,6 +292,16 @@ struct MainPage: View {
             // stop walking
             isWalking = false
             motionManager.stopAccelerometerUpdates()
+            accelerometerData.removeAll()
+            peakTimes.removeAll()
+            stepLength = 0
+            waitingFor1stValue = false
+            waitingFor2ndValue = false
+            waitingFor3rdValue = false
+            lastPeakSign = -1
+            lastPeakIndex = 0
+            isFirstPeakPositive = false
+            recentAccelData.removeAll()
         } else {
             // start walking
             accelerometerData.removeAll()
@@ -288,6 +320,7 @@ struct MainPage: View {
                 let vibrationDuration: Double = 0.9
                 let vibrate = UIImpactFeedbackGenerator(style: .heavy)
                 vibrate.prepare()
+                print("Vibrated")
                 for _ in 0..<Int(vibrationDuration * 10) {
                     vibrate.impactOccurred()
                     usleep(100000) // 100ms
@@ -307,6 +340,7 @@ struct MainPage: View {
     }
     
     func handleNewAccelerometerData(data: CMAccelerometerData) {
+        guard isWalking else { return }
         accelerometerData.append(data)
         recentAccelData.append(data.acceleration.z)
         
@@ -315,30 +349,46 @@ struct MainPage: View {
         }
         
         let zData = recentAccelData
-
+        
         let stdDev = stdDev(arr: zData)
         let mean = zData.reduce(0, +) / Double(zData.count)
         dynamicThreshold = mean + stdDev * 1.5
-        
+        print("Dynamic Threshold: \(dynamicThreshold)")
+        print("Now detecting steps")
         detectSteps()
     }
     
     func detectSteps() {
+        guard isWalking else { return }
         let zData = accelerometerData.map { $0.acceleration.z }
+        //        print("zData: \(zData)")
+        // mean of z-axis acceleration data
         let mean = zData.reduce(0, +) / Double(zData.count)
+        // variance of z-axis acceleration data
         let variance = zData.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(zData.count)
+        // standard deviation of z-axis acceleration data
         let stdDev = sqrt(variance)
+        // dynamic threshold of z-axis acceleration data --> WHY?
         let dynamicThresholdZ = mean + stdDev * 0.5
-
+        
         let currentIndex = zData.count - 1
-
-        if currentIndex < 2 { return }
-
+        
+        // if current index is less than 2(there are less than 2 data points)
+        if currentIndex < 2 { print("Not enough data points")
+            return }
+        
         let zDataCurr = zData[currentIndex]
         let zDataPrev = zData[currentIndex - 1]
         let DataTime = Double(currentIndex) / ACCELEROMETER_HZ
-
+        //        print("zDataCurr: \(zDataCurr), zDataPrev: \(zDataPrev), DataTime: \(DataTime)")
+        //            print("waitingFor1stValue: \(waitingFor1stValue), waitingFor2ndValue: \(waitingFor2ndValue)")
+        //            print("lastPeakIndex: \(lastPeakIndex), currentIndex: \(currentIndex)")
+        
+        // check if we're waiting for first peek, and if the z-data crosses,
         if waitingFor1stValue && ((zDataCurr < threshold && zDataPrev > threshold) || (zDataCurr > threshold && zDataPrev < threshold)) {
+            print("Checking 1st peak")
+            // likely that a step was taken
+            // if
             if lastPeakIndex == -1 || currentIndex - lastPeakIndex > Int(threshold) || currentIndex - lastPeakIndex > Int(dynamicThresholdZ) {
                 if lastPeakSign == -1 {
                     if peakTimes.isEmpty {
@@ -351,11 +401,13 @@ struct MainPage: View {
                     isFirstPeakPositive = true
                     waitingFor1stValue = false
                     waitingFor2ndValue = true
+                    print("1st peak detected at \(DataTime)")
                 }
             }
         }
-
+        
         if waitingFor2ndValue && ((zDataCurr < threshold && zDataPrev > threshold) || (zDataCurr > threshold && zDataPrev < threshold)) {
+            print("Checking 2nd peak")
             if currentIndex - lastPeakIndex > Int(threshold) || currentIndex - lastPeakIndex > Int(dynamicThresholdZ) {
                 if lastPeakSign == 1 {
                     peakTimes.append(DataTime)
@@ -363,24 +415,29 @@ struct MainPage: View {
                     lastPeakSign = -1
                     waitingFor2ndValue = false
                     waitingFor1stValue = true
+                    print("2nd peak detected at \(DataTime)")
                 }
             }
         }
-
+        
+        // if we detected two peaks, we know there was a step
         if peakTimes.count == 2 {
+            print("peakTimes.count == 2")
             let peak2 = peakTimes.last!
             let peak1 = peakTimes.first!
             let peakBetweenTime = peak2 - peak1
+            print("peakBetweenTime: \(peakBetweenTime)")
             let stepLengthEst = peakBetweenTime * gaitConstant * METERS_TO_INCHES
-
+            
             stepLength = stepLengthEst
             stepLengthFirebase.append(stepLengthEst)
-            let sec = Date().timeIntervalSince1970
+            //            let sec = Date().timeIntervalSince1970
+            let sec = String(Int(Date().timeIntervalSince1970))
             Task {
                 await viewModel.updateStepLength(sec: sec, stepLengthEst: stepLengthEst)
             }
-            print("STEP: \(stepLengthEst)")
-
+            print("Step Length Estimate: \(stepLengthEst)")
+            
             if vibrateOption == "Over Step Goal" {
                 if vibrateValue == "Vibrate Phone" && stepLengthEst > goalStep {
                     let vibrate = UIImpactFeedbackGenerator(style: .heavy)
@@ -389,7 +446,7 @@ struct MainPage: View {
                     playSound2()
                 }
             }
-
+            
             if vibrateOption == "Under Step Goal" {
                 if vibrateValue == "Vibrate Phone" && stepLengthEst < goalStep {
                     let vibrate = UIImpactFeedbackGenerator(style: .heavy)
@@ -398,12 +455,11 @@ struct MainPage: View {
                     playSound1()
                 }
             }
-
+            
             waitingFor1stValue = true
             peakTimes = [peakTimes.last!]
         }
     }
-
 }
 
 #Preview {

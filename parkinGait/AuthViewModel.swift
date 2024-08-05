@@ -21,12 +21,14 @@ class AuthViewModel: ObservableObject {
     @Published var currentCalibration: UserCalibration?
     @Published var showAlert: Bool = false
     @Published var alertMessage: String = ""
+    @Published var calibrationFetched: Bool = false
 
     
     init() {
         self.userSession = Auth.auth().currentUser
         Task {
             await fetchUser()
+            await fetchCalibration() // not sure if its right
         }
     }
     
@@ -133,6 +135,7 @@ class AuthViewModel: ObservableObject {
             let snapshot = try await ref.getData()
             guard let data = snapshot.value as? [String: Any] else { return }
             self.currentCalibration = UserCalibration(id: uid, gaitConstant: data["gaitConstant"] as? Double ?? 0, threshold: data["Threshold"] as? Double ?? 0, goalStep: data["GoalStep"] as? String ?? "", placement: data["placement"] as? String ?? "")
+            self.calibrationFetched = true
             print("DEBUG: Current user calibration is \(String(describing: self.currentCalibration))")
         } catch {
             print("DEBUG: Failed to fetch calibration with error \(error.localizedDescription)")
@@ -162,7 +165,8 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    func updateStepLength(sec: TimeInterval, stepLengthEst: Double) async {
+    func updateStepLength(sec: String, stepLengthEst: Double) async {
+//        func updateStepLength(sec: TimeInterval, stepLengthEst: Double) async {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         do {
             let ref = Database.database().reference().child("users").child(uid).child("StepLength")

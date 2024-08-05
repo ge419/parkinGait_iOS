@@ -1,10 +1,3 @@
-//
-//  Calibration.swift
-//  parkinGait
-//
-//  Created by 신창민 on 6/23/24.
-//
-
 import SwiftUI
 import CoreMotion
 
@@ -18,7 +11,6 @@ struct Calibration: View {
     @State private var locationPlacement = "In Pocket/In Front"
     @State private var feedbackData: (steps: Int, strideLength: Double, gaitConstant: Double) = (0, 0, 0)
     @State private var showFeedback = false
-    @State private var navigateMainPage = false
     @FocusState private var isTextFieldFocused: Bool
     
     private let distanceTraveled: Double = 5
@@ -42,6 +34,8 @@ struct Calibration: View {
                         .font(.title2)
                         .padding(.top, 20)
                     
+                    Text("This is our recommended goal step length. To personally modify the goal step length, enter custom value below and press Done").font(.body).padding()
+                    
                     TextField("Step Length Goal (inches)", text: $newGoalStep)
                         .keyboardType(.numberPad)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -55,6 +49,10 @@ struct Calibration: View {
                     
                     Text("Phone Location")
                         .font(.title2)
+                        .padding(.top, 20)
+                    
+                    Text("Choose your phone location. Please select In Pocket/In Front for now.")
+                        .font(.body)
                         .padding(.top, 20)
                     
                     Picker("Phone Location", selection: $locationPlacement) {
@@ -73,7 +71,7 @@ struct Calibration: View {
                             Text("Does this seem accurate?")
                             HStack {
                                 Button("Yes") {
-                                    showFeedback = false
+                                    handleSaveCalibration()
                                 }
                                 .padding()
                                 .background(Color.green)
@@ -95,25 +93,16 @@ struct Calibration: View {
                     }
                     
                     // Start Collecting button
+                    Text("To start calibrating, press the button below. The calibration process will begin after 3 second delay. Hold your phone in up right position and start walking immediately once the process begins.")
+                        .font(.body)
+                        .padding(.top, 20)
+                    
                     Button {
                         handleToggleCollecting()
                     } label: {
                         Text(isCollecting ? "Stop Collecting" : "Start Collecting")
                             .padding()
-                            .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
-                            .background(Color.green)
-                            .foregroundColor(.white)
-                            .cornerRadius(5)
-                        
-                    }.padding()
-                    
-                    // Calibrate button
-                    Button {
-                        handleCalibrate()
-                    } label: {
-                        Text("Calibrate")
-                            .padding()
-                            .fontWeight(/*@START_MENU_TOKEN@*/.bold/*@END_MENU_TOKEN@*/)
+                            .fontWeight(.bold)
                             .background(Color.green)
                             .foregroundColor(.white)
                             .cornerRadius(5)
@@ -142,23 +131,28 @@ struct Calibration: View {
         } else {
             isCollecting = false
             motionManager.stopAccelerometerUpdates()
+            handleCalibrate()
         }
     }
     
     private func handleCalibrate() {
         let yData = accelerometerData.map { $0.acceleration.y }
-        let zData = accelerometerData.map { $0.acceleration.z
-        }
+        let zData = accelerometerData.map { $0.acceleration.z }
         
+        // MUST BE TESTED WITH PHONE FACING Z-AXIS
         if locationPlacement == "In Pocket/In Front" {
             // use z data
             
+            // mean of 10 consecutive z-accelerometer data points
             let mean = zData.prefix(zData.count - 10).reduce(0, +) / Double(zData.count - 10)
             
             var steps: [Double] = []
             var lastIndex = 0
             
+            // looping through zData
+            // distanceThreshold: must be at least 3 data points apart to count as step --> enough time passed for another step detection
             for (index, z) in zData.enumerated() {
+                // filter last 10 data points to exclude noise
                 if index < zData.count - 10,
                    index - lastIndex > distanceThreshold,
                    (z < mean && zData[index - 1] > mean) || (zData[index - 1] < mean && z > mean) {
@@ -167,17 +161,23 @@ struct Calibration: View {
                 }
             }
             
-            let times = zip(steps.dropFirst(), steps).map { ($0 - $1) / 10.0 } 
+            // times between steps
+            let times = zip(steps.dropFirst(), steps).map { ($0 - $1) / 10.0 }
+            // average times between steps
             let avTime = times.reduce(0, +) / Double(times.count)
+            // average step length: 5m/number of steps (m)
             let avStepLength = distanceTraveled / Double(steps.count)
-            //            let avStepLengthInches = avStepLength * metersToInches
+            // average step lenght in inches
+            let avStepLengthInches = avStepLength * metersToInches
+            // gait constant: average step length / average time between steps
             let gaitConstant = avStepLength / avTime
+            print("Average Step Length: \(avStepLength)m, \(avStepLengthInches)in")
+            print("Gait Constant: \(gaitConstant)")
             
-            Task {
-                await viewModel.saveCalibration(gaitConstant: gaitConstant, threshold: mean, goalStep: newGoalStep, placement: locationPlacement)
-                presentationMode.wrappedValue.dismiss()
-            }
+            feedbackData = (steps: steps.count, strideLength: avStepLength, gaitConstant: gaitConstant)
+            showFeedback = true
         }
+        // MUST BE TESTED WITH PHONE'S HEAD FACING FRONT
         else if locationPlacement == "In Waist/On Side" {
             // use y data
             let mean = yData.prefix(yData.count - 10).reduce(0, +) / Double(yData.count - 10)
@@ -200,14 +200,20 @@ struct Calibration: View {
             //            let avStepLengthInches = avStepLength * metersToInches
             let gaitConstant = avStepLength / avTime
             
-            Task {
-                await viewModel.saveCalibration(gaitConstant: gaitConstant, threshold: mean, goalStep: newGoalStep, placement: locationPlacement)
-            }
             feedbackData = (steps: steps.count, strideLength: avStepLength, gaitConstant: gaitConstant)
             showFeedback = true
-            presentationMode.wrappedValue.dismiss()
         }
-        navigateMainPage = true
+    }
+    
+    private func handleSaveCalibration() {
+        Task {
+            let mean = locationPlacement == "In Pocket/In Front"
+                ? accelerometerData.map { $0.acceleration.z }.prefix(accelerometerData.count - 10).reduce(0, +) / Double(accelerometerData.count - 10)
+                : accelerometerData.map { $0.acceleration.y }.prefix(accelerometerData.count - 10).reduce(0, +) / Double(accelerometerData.count - 10)
+
+            await viewModel.saveCalibration(gaitConstant: feedbackData.gaitConstant, threshold: mean, goalStep: newGoalStep, placement: locationPlacement)
+            showFeedback = false
+        }
     }
     
     private func startAccelerometerUpdates() {
