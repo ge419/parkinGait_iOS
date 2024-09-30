@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -51,6 +51,10 @@
 		22FA8F692C451091008C7BBE /* UserCalibration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserCalibration.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		2275D80A2CAB3D21001B5624 /* Classes */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Classes; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
 		2263EE1A2C26AB3A00688173 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
@@ -85,6 +89,7 @@
 		2263EE1F2C26AB3A00688173 /* parkinGait */ = {
 			isa = PBXGroup;
 			children = (
+				2275D80A2CAB3D21001B5624 /* Classes */,
 				22FA8F5B2C2D57B9008C7BBE /* GoogleService-Info.plist */,
 				2263EE202C26AB3A00688173 /* parkinGaitApp.swift */,
 				2263EE222C26AB3A00688173 /* ContentView.swift */,
@@ -128,6 +133,9 @@
 			buildRules = (
 			);
 			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				2275D80A2CAB3D21001B5624 /* Classes */,
 			);
 			name = parkinGait;
 			packageProductDependencies = (

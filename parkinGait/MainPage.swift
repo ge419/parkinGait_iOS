@@ -9,6 +9,7 @@ import SwiftUI
 import CoreMotion
 import AVFoundation
 import Charts
+import simd
 
 struct MainPage: View {
     @EnvironmentObject var viewModel: AuthViewModel
@@ -40,12 +41,21 @@ struct MainPage: View {
     @State private var dynamicThreshold: Double = 0
     @State private var recentAccelData: [Double] = []
     
+
+    @State private var stepCum: Double = 0
+    @State private var velIntegral = Integral()
+    @State private var posIntegral = Integral()
+    @State private var dt = DeltaTime()
+    
     private var motionManager = CMMotionManager()
     
     let ACCELEROMETER_TIMING = 0.1
     let ACCELEROMETER_HZ = 1.0 / 0.1
     let METERS_TO_INCHES = 39.3701
     let DISTANCE_THRESHOLD = 3.0
+    let ACCEL_THRESH = 1
+    let GYRO_THRESH = 3.0
+    let GRAVITY = 9.81
     
     let bgColor = Color(red: 0.8706, green: 0.8549, blue: 0.8235)
     
@@ -61,7 +71,7 @@ struct MainPage: View {
                         .font(.body)
                         .padding(.top, 20)
                     
-                    Button(action: handleToggleWalking) {
+                    Button(action: handleToggleWalkingIMU) { // handleToggleWalkingIMU
                         Text(isWalking ? "Stop Walking" : "Start Walking")
                             .font(.title)
                             .padding()
@@ -102,7 +112,6 @@ struct MainPage: View {
                             }
                         }
                     }
-
 
 
                     Text("Step Length Estimate: \(String(format: "%.2f", stepLength)) inches")
@@ -306,198 +315,283 @@ struct MainPage: View {
         }
     }
     
-    func movingAverage(data: [Double], windowSize: Int) -> [Double] {
-        var result: [Double] = []
-        
-        for i in 0..<(data.count - windowSize + 1) {
-            let currentWindow = Array(data[i..<(i + windowSize)])
-            let windowAvg = currentWindow.reduce(0, +) / Double(windowSize)
-            result.append(windowAvg)
-        }
-        
-        return result
-    }
+//    func movingAverage(data: [Double], windowSize: Int) -> [Double] {
+//        var result: [Double] = []
+//        
+//        for i in 0..<(data.count - windowSize + 1) {
+//            let currentWindow = Array(data[i..<(i + windowSize)])
+//            let windowAvg = currentWindow.reduce(0, +) / Double(windowSize)
+//            result.append(windowAvg)
+//        }
+//        
+//        return result
+//    }
+//    
+//    func stdDev(arr: [Double]) -> Double {
+//        let avg = arr.reduce(0, +) / Double(arr.count)
+//        let sumOfSquares = arr.reduce(0) { $0 + ($1 - avg) * ($1 - avg) }
+//        return sqrt(sumOfSquares / Double(arr.count))
+//    }
     
-    func stdDev(arr: [Double]) -> Double {
-        let avg = arr.reduce(0, +) / Double(arr.count)
-        let sumOfSquares = arr.reduce(0) { $0 + ($1 - avg) * ($1 - avg) }
-        return sqrt(sumOfSquares / Double(arr.count))
-    }
-    
-    func handleToggleWalking() {
+    func handleToggleWalkingIMU() {
         if isWalking {
             // stop walking
             isWalking = false
-            motionManager.stopAccelerometerUpdates()
-            accelerometerData.removeAll()
-            peakTimes.removeAll()
-            stepLength = 0
-            waitingFor1stValue = false
-            waitingFor2ndValue = false
-            waitingFor3rdValue = false
-            lastPeakSign = -1
-            lastPeakIndex = 0
-            isFirstPeakPositive = false
+            motionManager.stopDeviceMotionUpdates()
             recentAccelData.removeAll()
+            stepLength = 0
         } else {
             // start walking
-            accelerometerData.removeAll()
-            peakTimes.removeAll()
+            recentAccelData.removeAll()
             stepLength = 0
-            waitingFor1stValue = false
+//            resetPosition()
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                isWalking = true
-                waitingFor1stValue = true
-                waitingFor2ndValue = false
-                waitingFor3rdValue = false
-                isFirstPeakPositive = false
-                lastPeakSign = -1
-                lastPeakIndex = -1
-                let vibrationDuration: Double = 0.9
-                let vibrate = UIImpactFeedbackGenerator(style: .heavy)
-                vibrate.prepare()
-                print("Vibrated")
-                for _ in 0..<Int(vibrationDuration * 10) {
-                    vibrate.impactOccurred()
-                    usleep(100000) // 100ms
-                }
-                if motionManager.isAccelerometerAvailable {
-                    motionManager.accelerometerUpdateInterval = ACCELEROMETER_TIMING
-                    motionManager.startAccelerometerUpdates(to: .main) {data, error in
-                        if let data = data {
-                            handleNewAccelerometerData(data: data)
-                        }
-                        
+            if motionManager.isDeviceMotionAvailable {
+                motionManager.deviceMotionUpdateInterval = ACCELEROMETER_TIMING
+                motionManager.startDeviceMotionUpdates(to: .main) { data, error in
+                    if let motionData = data {
+                        handleNewIMUData(data: motionData)
                     }
                 }
+                
             }
-            
         }
     }
     
-    func handleNewAccelerometerData(data: CMAccelerometerData) {
+//    func handleToggleWalking() {
+//        if isWalking {
+//            // stop walking
+//            isWalking = false
+//            motionManager.stopAccelerometerUpdates()
+//            accelerometerData.removeAll()
+//            peakTimes.removeAll()
+//            stepLength = 0
+//            waitingFor1stValue = false
+//            waitingFor2ndValue = false
+//            waitingFor3rdValue = false
+//            lastPeakSign = -1
+//            lastPeakIndex = 0
+//            isFirstPeakPositive = false
+//            recentAccelData.removeAll()
+//        } else {
+//            // start walking
+//            accelerometerData.removeAll()
+//            peakTimes.removeAll()
+//            stepLength = 0
+//            waitingFor1stValue = false
+//            
+//            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+//                isWalking = true
+//                waitingFor1stValue = true
+//                waitingFor2ndValue = false
+//                waitingFor3rdValue = false
+//                isFirstPeakPositive = false
+//                lastPeakSign = -1
+//                lastPeakIndex = -1
+//                let vibrationDuration: Double = 0.9
+//                let vibrate = UIImpactFeedbackGenerator(style: .heavy)
+//                vibrate.prepare()
+//                print("Vibrated")
+//                for _ in 0..<Int(vibrationDuration * 10) {
+//                    vibrate.impactOccurred()
+//                    usleep(100000) // 100ms
+//                }
+//                if motionManager.isAccelerometerAvailable {
+//                    motionManager.accelerometerUpdateInterval = ACCELEROMETER_TIMING
+//                    motionManager.startAccelerometerUpdates(to: .main) {data, error in
+//                        if let data = data {
+//                            handleNewAccelerometerData(data: data)
+//                        }
+//                        
+//                    }
+//                }
+//            }
+//            
+//        }
+//    }
+    
+    func handleNewIMUData(data: CMDeviceMotion) {
         guard isWalking else { return }
-        accelerometerData.append(data)
-        recentAccelData.append(data.acceleration.z)
-        
+            
+        // Get accelerometer and gyroscope data
+        let accel = SIMD3<Float>(Float(data.userAcceleration.x), Float(data.userAcceleration.y), Float(data.userAcceleration.z))
+        let gyro = SIMD3<Float>(Float(data.rotationRate.x), Float(data.rotationRate.y), Float(data.rotationRate.z))
+        let gravity = getGravity(q: data.attitude.quaternion)
+            
+        // Filter accelerometer and gyroscope data
+        let accelFiltered = accel // apply filtering here if needed
+        let gyroFiltered = gyro // apply filtering here if needed
+            
+        // Project acceleration onto the gravity vector
+        let ag = projectAccelOnGravity(accel: accelFiltered, gravity: gravity) * Float(METERS_TO_INCHES)
+            
+        // Update position and velocity using integration
+//            let delta = dt.step(ts: data.timestamp)
+        let position = calculatePos(ag: ag, deviceMotion: data)
+            
+        // Append z-axis data for chart --> necesary?
+        recentAccelData.append(Double(accelFiltered.z))
         if recentAccelData.count > 20 {
             recentAccelData.removeFirst()
         }
-        
-        let zData = recentAccelData
-        
-        let stdDev = stdDev(arr: zData)
-        let mean = zData.reduce(0, +) / Double(zData.count)
-        dynamicThreshold = mean + stdDev * 1.5
-        print("Dynamic Threshold: \(dynamicThreshold)")
-        print("Now detecting steps")
-        detectSteps()
     }
     
-    func detectSteps() {
-        guard isWalking else { return }
-        let zData = accelerometerData.map { $0.acceleration.z }
-        //        print("zData: \(zData)")
-        // mean of z-axis acceleration data
-        let mean = zData.reduce(0, +) / Double(zData.count)
-        // variance of z-axis acceleration data
-        let variance = zData.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(zData.count)
-        // standard deviation of z-axis acceleration data
-        let stdDev = sqrt(variance)
-        // dynamic threshold of z-axis acceleration data --> WHY?
-        let dynamicThresholdZ = mean + stdDev * 0.5
-        
-        let currentIndex = zData.count - 1
-        
-        // if current index is less than 2(there are less than 2 data points)
-        if currentIndex < 2 { print("Not enough data points")
-            return }
-        
-        let zDataCurr = zData[currentIndex]
-        let zDataPrev = zData[currentIndex - 1]
-        let DataTime = Double(currentIndex) / ACCELEROMETER_HZ
-        //        print("zDataCurr: \(zDataCurr), zDataPrev: \(zDataPrev), DataTime: \(DataTime)")
-        //            print("waitingFor1stValue: \(waitingFor1stValue), waitingFor2ndValue: \(waitingFor2ndValue)")
-        //            print("lastPeakIndex: \(lastPeakIndex), currentIndex: \(currentIndex)")
-        
-        // check if we're waiting for first peek, and if the z-data crosses,
-        if waitingFor1stValue && ((zDataCurr < threshold && zDataPrev > threshold) || (zDataCurr > threshold && zDataPrev < threshold)) {
-            print("Checking 1st peak")
-            // likely that a step was taken
-            // if
-            if lastPeakIndex == -1 || currentIndex - lastPeakIndex > Int(threshold) || currentIndex - lastPeakIndex > Int(dynamicThresholdZ) {
-                if lastPeakSign == -1 {
-                    if peakTimes.isEmpty {
-                        peakTimes.append(DataTime)
-                    } else {
-                        peakTimes.append(DataTime)
-                    }
-                    lastPeakIndex = currentIndex
-                    lastPeakSign = 1
-                    isFirstPeakPositive = true
-                    waitingFor1stValue = false
-                    waitingFor2ndValue = true
-                    print("1st peak detected at \(DataTime)")
-                }
-            }
-        }
-        
-        if waitingFor2ndValue && ((zDataCurr < threshold && zDataPrev > threshold) || (zDataCurr > threshold && zDataPrev < threshold)) {
-            print("Checking 2nd peak")
-            if currentIndex - lastPeakIndex > Int(threshold) || currentIndex - lastPeakIndex > Int(dynamicThresholdZ) {
-                if lastPeakSign == 1 {
-                    peakTimes.append(DataTime)
-                    lastPeakIndex = currentIndex
-                    lastPeakSign = -1
-                    waitingFor2ndValue = false
-                    waitingFor1stValue = true
-                    print("2nd peak detected at \(DataTime)")
-                }
-            }
-        }
-        
-        // if we detected two peaks, we know there was a step
-        if peakTimes.count == 2 {
-            print("peakTimes.count == 2")
-            let peak2 = peakTimes.last!
-            let peak1 = peakTimes.first!
-            let peakBetweenTime = peak2 - peak1
-            print("peakBetweenTime: \(peakBetweenTime)")
-            let stepLengthEst = peakBetweenTime * gaitConstant * METERS_TO_INCHES
+//    func handleNewAccelerometerData(data: CMAccelerometerData) {
+//        guard isWalking else { return }
+//        accelerometerData.append(data)
+//        recentAccelData.append(data.acceleration.z)
+//        
+//        if recentAccelData.count > 20 {
+//            recentAccelData.removeFirst()
+//        }
+//        
+//        let zData = recentAccelData
+//        
+//        let stdDev = stdDev(arr: zData)
+//        let mean = zData.reduce(0, +) / Double(zData.count)
+//        dynamicThreshold = mean + stdDev * 1.5
+//        print("Dynamic Threshold: \(dynamicThreshold)")
+//        print("Now detecting steps")
+//        detectSteps()
+//    }
+//    
+//    func detectSteps() {
+//        guard isWalking else { return }
+//        let zData = accelerometerData.map { $0.acceleration.z }
+//        //        print("zData: \(zData)")
+//        // mean of z-axis acceleration data
+//        let mean = zData.reduce(0, +) / Double(zData.count)
+//        // variance of z-axis acceleration data
+//        let variance = zData.reduce(0) { $0 + ($1 - mean) * ($1 - mean) } / Double(zData.count)
+//        // standard deviation of z-axis acceleration data
+//        let stdDev = sqrt(variance)
+//        // dynamic threshold of z-axis acceleration data --> WHY?
+//        let dynamicThresholdZ = mean + stdDev * 0.5
+//        
+//        let currentIndex = zData.count - 1
+//        
+//        // if current index is less than 2(there are less than 2 data points)
+//        if currentIndex < 2 { print("Not enough data points")
+//            return }
+//        
+//        let zDataCurr = zData[currentIndex]
+//        let zDataPrev = zData[currentIndex - 1]
+//        let DataTime = Double(currentIndex) / ACCELEROMETER_HZ
+//        //        print("zDataCurr: \(zDataCurr), zDataPrev: \(zDataPrev), DataTime: \(DataTime)")
+//        //            print("waitingFor1stValue: \(waitingFor1stValue), waitingFor2ndValue: \(waitingFor2ndValue)")
+//        //            print("lastPeakIndex: \(lastPeakIndex), currentIndex: \(currentIndex)")
+//        
+//        // check if we're waiting for first peek, and if the z-data crosses,
+//        if waitingFor1stValue && ((zDataCurr < threshold && zDataPrev > threshold) || (zDataCurr > threshold && zDataPrev < threshold)) {
+//            print("Checking 1st peak")
+//            // likely that a step was taken
+//            // if
+//            if lastPeakIndex == -1 || currentIndex - lastPeakIndex > Int(threshold) || currentIndex - lastPeakIndex > Int(dynamicThresholdZ) {
+//                if lastPeakSign == -1 {
+//                    if peakTimes.isEmpty {
+//                        peakTimes.append(DataTime)
+//                    } else {
+//                        peakTimes.append(DataTime)
+//                    }
+//                    lastPeakIndex = currentIndex
+//                    lastPeakSign = 1
+//                    isFirstPeakPositive = true
+//                    waitingFor1stValue = false
+//                    waitingFor2ndValue = true
+//                    print("1st peak detected at \(DataTime)")
+//                }
+//            }
+//        }
+//        
+//        if waitingFor2ndValue && ((zDataCurr < threshold && zDataPrev > threshold) || (zDataCurr > threshold && zDataPrev < threshold)) {
+//            print("Checking 2nd peak")
+//            if currentIndex - lastPeakIndex > Int(threshold) || currentIndex - lastPeakIndex > Int(dynamicThresholdZ) {
+//                if lastPeakSign == 1 {
+//                    peakTimes.append(DataTime)
+//                    lastPeakIndex = currentIndex
+//                    lastPeakSign = -1
+//                    waitingFor2ndValue = false
+//                    waitingFor1stValue = true
+//                    print("2nd peak detected at \(DataTime)")
+//                }
+//            }
+//        }
+//        
+//        // if we detected two peaks, we know there was a step
+//        if peakTimes.count == 2 {
+//            print("peakTimes.count == 2")
+//            let peak2 = peakTimes.last!
+//            let peak1 = peakTimes.first!
+//            let peakBetweenTime = peak2 - peak1
+//            print("peakBetweenTime: \(peakBetweenTime)")
+//            let stepLengthEst = peakBetweenTime * gaitConstant * METERS_TO_INCHES
+//            
+//            stepLength = stepLengthEst
+//            stepLengthFirebase.append(stepLengthEst)
+//            //            let sec = Date().timeIntervalSince1970
+//            let sec = String(Int(Date().timeIntervalSince1970))
+//            Task {
+//                await viewModel.updateStepLength(sec: sec, stepLengthEst: stepLengthEst)
+//            }
+//            print("Step Length Estimate: \(stepLengthEst)")
+//            
+//            if vibrateOption == "Over Step Goal" {
+//                if vibrateValue == "Vibrate Phone" && stepLengthEst > goalStep {
+//                    let vibrate = UIImpactFeedbackGenerator(style: .heavy)
+//                    vibrate.prepare()
+//                    vibrate.impactOccurred()
+//                    playSound2()
+//                }
+//            }
+//            
+//            if vibrateOption == "Under Step Goal" {
+//                if vibrateValue == "Vibrate Phone" && stepLengthEst < goalStep {
+//                    let vibrate = UIImpactFeedbackGenerator(style: .heavy)
+//                    vibrate.prepare()
+//                    vibrate.impactOccurred()
+//                    playSound1()
+//                }
+//            }
+//            
+//            waitingFor1stValue = true
+//            peakTimes = [peakTimes.last!]
+//        }
+//    }
+    
+    // FUNCTIONS FOR NEW ALGORITHM STARTS HERE
+    
+    // Calculate position by integrating gravity-adjusted acceleration twice
+    // TODO: Refactor so that it doesn't take CMDeviceMotion as parameter
+    func calculatePos(ag: SIMD3<Float>, deviceMotion: CMDeviceMotion) -> SIMD3<Float> {
+        let deltaTime = dt.step(ts: deviceMotion.timestamp)
+        let velocity = velIntegral.step(v: ag, dt: deltaTime)
+        let position = posIntegral.step(v: velocity, dt: deltaTime)
+        return position
             
-            stepLength = stepLengthEst
-            stepLengthFirebase.append(stepLengthEst)
-            //            let sec = Date().timeIntervalSince1970
-            let sec = String(Int(Date().timeIntervalSince1970))
-            Task {
-                await viewModel.updateStepLength(sec: sec, stepLengthEst: stepLengthEst)
-            }
-            print("Step Length Estimate: \(stepLengthEst)")
-            
-            if vibrateOption == "Over Step Goal" {
-                if vibrateValue == "Vibrate Phone" && stepLengthEst > goalStep {
-                    let vibrate = UIImpactFeedbackGenerator(style: .heavy)
-                    vibrate.prepare()
-                    vibrate.impactOccurred()
-                    playSound2()
-                }
-            }
-            
-            if vibrateOption == "Under Step Goal" {
-                if vibrateValue == "Vibrate Phone" && stepLengthEst < goalStep {
-                    let vibrate = UIImpactFeedbackGenerator(style: .heavy)
-                    vibrate.prepare()
-                    vibrate.impactOccurred()
-                    playSound1()
-                }
-            }
-            
-            waitingFor1stValue = true
-            peakTimes = [peakTimes.last!]
+//            if position.length() > 0.02 {
+//                stepCum += Double(position.length())
+//                stepLength = stepCum
+//                stepCum = 0
+//                resetPosition()
         }
     }
-}
+    
+//    func resetPosition() {
+//            velIntegral.reset(vec: SIMD3<Float>(0, 0, 0))
+//            posIntegral.reset(vec: SIMD3<Float>(0, 0, 0))
+//            dt.reset()
+//    }
+    
+    func getGravity(q: CMQuaternion) -> SIMD3<Float> {
+            let r0 = 2 * Float(q.w * q.z - q.x * q.y)
+            let r1 = 2 * Float(q.y * q.z + q.w * q.x)
+            let r2 = Float(q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z)
+            return SIMD3<Float>(r0, r1, r2)
+    }
+        
+    func projectAccelOnGravity(accel: SIMD3<Float>, gravity: SIMD3<Float>) -> SIMD3<Float> {
+            return accel - dot(accel, gravity) * gravity
+    }
 
 #Preview {
     MainPage()
