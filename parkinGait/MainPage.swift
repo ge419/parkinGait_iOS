@@ -46,14 +46,16 @@ struct MainPage: View {
     @State private var velIntegral = Integral()
     @State private var posIntegral = Integral()
     @State private var dt = DeltaTime()
+    @State private var zvu = ZVU()
     
     private var motionManager = CMMotionManager()
+    
     
     let ACCELEROMETER_TIMING = 0.1
     let ACCELEROMETER_HZ = 1.0 / 0.1
     let METERS_TO_INCHES = 39.3701
     let DISTANCE_THRESHOLD = 3.0
-    let ACCEL_THRESH = 1
+    let ACCEL_THRESH = 1.0
     let GYRO_THRESH = 3.0
     let GRAVITY = 9.81
     
@@ -333,29 +335,64 @@ struct MainPage: View {
 //        return sqrt(sumOfSquares / Double(arr.count))
 //    }
     
+//    func handleToggleWalkingIMU() {
+//        if isWalking {
+//            // stop walking
+//            isWalking = false
+//            motionManager.stopDeviceMotionUpdates()
+//            recentAccelData.removeAll()
+//            stepLength = 0
+//        } else {
+//            // start walking
+//            recentAccelData.removeAll()
+//            stepLength = 0
+////            resetPosition()
+//            
+//            if motionManager.isDeviceMotionAvailable {
+//                motionManager.deviceMotionUpdateInterval = ACCELEROMETER_TIMING
+//                motionManager.startDeviceMotionUpdates(to: .main) { data, error in
+//                    if let motionData = data {
+//                        handleNewIMUData(data: motionData)
+//                    }
+//                }
+//                
+//            }
+//        }
+//    }
+    
     func handleToggleWalkingIMU() {
         if isWalking {
-            // stop walking
-            isWalking = false
-            motionManager.stopDeviceMotionUpdates()
-            recentAccelData.removeAll()
-            stepLength = 0
+            // Stop walking and reset data
+            resetPos()
+            stopWalkingIMU()
         } else {
-            // start walking
-            recentAccelData.removeAll()
-            stepLength = 0
-//            resetPosition()
-            
-            if motionManager.isDeviceMotionAvailable {
-                motionManager.deviceMotionUpdateInterval = ACCELEROMETER_TIMING
-                motionManager.startDeviceMotionUpdates(to: .main) { data, error in
-                    if let motionData = data {
-                        handleNewIMUData(data: motionData)
-                    }
+            // Start walking and update data
+            startWalkingIMU()
+        }
+    }
+    
+    func startWalkingIMU() {
+        isWalking = true
+        recentAccelData.removeAll()
+        stepLength = 0
+        
+        zvu.begin(threshA: Float(ACCEL_THRESH), threshB: Float(GYRO_THRESH), sampleThresh: 30)
+        
+        if motionManager.isDeviceMotionAvailable {
+            motionManager.deviceMotionUpdateInterval = ACCELEROMETER_TIMING
+            motionManager.startDeviceMotionUpdates(to: .main) { data, error in
+                if let motionData = data {
+                    handleNewIMUData(data: motionData)
                 }
-                
             }
         }
+    }
+    
+    func stopWalkingIMU() {
+        isWalking = false
+        motionManager.stopDeviceMotionUpdates()
+        recentAccelData.removeAll()
+        stepLength = 0
     }
     
 //    func handleToggleWalking() {
@@ -410,6 +447,30 @@ struct MainPage: View {
 //        }
 //    }
     
+    func resetPos() {
+        // Reset velocity integral to initial state
+        velIntegral.reset(vec: SIMD3<Float>(0, 0, 0))
+    
+        // Reset position integral to initial state
+        posIntegral.reset(vec: SIMD3<Float>(0, 0, 0))
+    
+        // Reset the delta time to start fresh with the new timestamp
+        // TODO: Make sure Date() part is accurate
+        dt.set(ts: motionManager.deviceMotion?.timestamp ?? Date().timeIntervalSince1970)
+
+    }
+
+    func resetVel() {
+        // Reset velocity integral to initial state
+        velIntegral.reset(vec: SIMD3<Float>(0, 0, 0))
+        
+        // Reset the previous position state to a vector of zeros
+        posIntegral.resetPrev(vec: SIMD3<Float>(0, 0, 0))
+    
+        // TODO: Make sure Date() part is accurate
+        dt.set(ts: motionManager.deviceMotion?.timestamp ?? Date().timeIntervalSince1970)
+    }
+    
     func handleNewIMUData(data: CMDeviceMotion) {
         guard isWalking else { return }
             
@@ -420,20 +481,49 @@ struct MainPage: View {
             
         // Filter accelerometer and gyroscope data
         let accelFiltered = accel // apply filtering here if needed
-        let gyroFiltered = gyro // apply filtering here if needed
+//        let gyroFiltered = gyro // apply filtering here if needed
             
         // Project acceleration onto the gravity vector
         let ag = projectAccelOnGravity(accel: accelFiltered, gravity: gravity) * Float(METERS_TO_INCHES)
-            
+        print("Gravity adjusted acceleration: \(ag)")
         // Update position and velocity using integration
 //            let delta = dt.step(ts: data.timestamp)
         let position = calculatePos(ag: ag, deviceMotion: data)
-            
-        // Append z-axis data for chart --> necesary?
-        recentAccelData.append(Double(accelFiltered.z))
-        if recentAccelData.count > 20 {
-            recentAccelData.removeFirst()
+        
+        
+        let notMoving = zvu.check(a: ag, b: gyro);
+        if notMoving {
+            print("Not moving")
+            // When not moving, calculate and print the final step length
+            if length(posIntegral.cum) > 0.02 {
+                let cumulativeStepLength = Double(length(posIntegral.cum))  // Position change for the current step
+                print("Total Step Length for this step: \(cumulativeStepLength) inches")
+                stepLength = 0  // Update UI with step length
+
+//                stepCum = 0  // Reset cumulative distance after completing the step
+//                resetPos()   // Reset position and velocity integrals
+            }
+            resetPos()
+            dt.first = data.timestamp
+        } else {
+            print("Moving")
+            if length(posIntegral.cum) > 0.02 {
+                // Accumulate step length in real time while moving
+                let currentStepLength = Double(length(posIntegral.cum))
+                stepLength = currentStepLength  // Update UI in real-time as you move
+                print("Current Step Length: \(stepLength) inches")
+                
+                // Reset position integrals to calculate the next step accurately
+                resetVel()  // Reset velocity integral only to continue integrating position
+            }
         }
+        
+            
+//         Append z-axis data for chart --> necesary?
+//        recentAccelData.append(Double(accelFiltered.z))
+//        if recentAccelData.count > 20 {
+//            recentAccelData.removeFirst()
+//        }
     }
     
 //    func handleNewAccelerometerData(data: CMAccelerometerData) {
@@ -566,13 +656,8 @@ struct MainPage: View {
         let deltaTime = dt.step(ts: deviceMotion.timestamp)
         let velocity = velIntegral.step(v: ag, dt: deltaTime)
         let position = posIntegral.step(v: velocity, dt: deltaTime)
+        print("Position: \(position)")
         return position
-            
-//            if position.length() > 0.02 {
-//                stepCum += Double(position.length())
-//                stepLength = stepCum
-//                stepCum = 0
-//                resetPosition()
         }
     }
     
@@ -592,7 +677,7 @@ struct MainPage: View {
     func projectAccelOnGravity(accel: SIMD3<Float>, gravity: SIMD3<Float>) -> SIMD3<Float> {
             return accel - dot(accel, gravity) * gravity
     }
-
+    
 #Preview {
     MainPage()
 }
